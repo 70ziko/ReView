@@ -3,10 +3,5 @@ __pycache__
 *.pyc
 *.pyo
 *.pyd
-*.swp
-*.log
-*.bak
-*.tmp
-
 .env
 amazon_data/
