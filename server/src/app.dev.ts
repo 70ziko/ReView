@@ -13,7 +13,6 @@ dotenv.config({ path: '../.env' });
 const app: Express = express();
 const httpServer = createServer(app);
 
-// Set up Socket.io for WebSockets
 const io = new Server(httpServer, {
     cors: {
         origin: process.env.CORS_ORIGIN || '*',
@@ -21,28 +20,22 @@ const io = new Server(httpServer, {
     },
 });
 
-// Middleware
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));  // Increased limit for base64 images
+app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// API routes
 app.use('/api', routes);
 
-// Socket.io connection handling for real-time chat
 io.on('connection', (socket) => {
     console.log(`Client connected: ${socket.id}`);
 
-    // Handle chat messages
     socket.on('chat:message', async (data: { message: string }) => {
         try {
-            // Process message with streaming response
             await graphRagAgent.processMessage(data.message, (chunk) => {
                 socket.emit('chat:response:chunk', { chunk });
             });
             
-            // Signal end of response
             socket.emit('chat:response:done');
         } catch (error) {
             console.error('Error processing chat message:', error);
@@ -50,10 +43,8 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle messages with images
     socket.on('chat:message:image', async (data: { message: string, imageData: string, isUrl: boolean }) => {
         try {
-            // Process message with image and streaming response
             await graphRagAgent.processMessageWithImage(
                 data.message,
                 data.imageData,
@@ -63,7 +54,6 @@ io.on('connection', (socket) => {
                 }
             );
             
-            // Signal end of response
             socket.emit('chat:response:done');
         } catch (error) {
             console.error('Error processing chat message with image:', error);
@@ -71,7 +61,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Clear chat history
     socket.on('chat:clear', async () => {
         try {
             await graphRagAgent.clearHistory();
@@ -82,13 +71,11 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle disconnection
     socket.on('disconnect', () => {
         console.log(`Client disconnected: ${socket.id}`);
     });
 });
 
-// Default route
 app.get('/', (_req: Request, res: Response) => {
     res.send('ReView API Server is running');
 });
@@ -106,13 +93,10 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Initialize the database and start the server
 const startServer = async () => {
     try {
-        // Initialize the database
         await initializeDatabase();
         
-        // Start the server
         httpServer.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
