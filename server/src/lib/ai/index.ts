@@ -1,27 +1,27 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
-import { DynamicTool } from 'langchain/tools';
+import { DynamicStructuredTool, DynamicTool, StructuredTool } from 'langchain/tools';
 import { BaseChatMemory } from 'langchain/memory';
 import { ChatMessageHistory } from 'langchain/stores/message/in_memory';
 import { db, executeAqlQuery, sanitizeKey } from '../index.js';
-import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { OpenAI } from 'openai';
-import { z } from 'zod';
+import { ChatPromptTemplate, MessagesPlaceholder, SystemMessagePromptTemplate } from '@langchain/core/prompts';
+// import { OpenAI } from 'openai';
+// import { z } from 'zod';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// const openai = new OpenAI({
+//     apiKey: process.env.OPENAI_API_KEY,
+// });
 
 const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
     return [
         new DynamicTool({
             name: "get_product_by_description",
             description: "Searches for products that match a given description by using vector similarity search on product embeddings.",
-            schema: z.object({
-                query: z.string().describe("The description or query to search for")
-            }),
-            func: async ({ query }) => {
+            // schema: z.object({
+            //     query: z.string().describe("The description or query to search for")
+            // }),
+            func: async ( query ) => {
                 try {
                     const queryEmbedding = await embeddingsModel.embedQuery(query);
                     
@@ -67,15 +67,13 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
         new DynamicTool({
             name: "get_reviews_for_product",
             description: "Retrieves reviews for a specific product identified by its ASIN (Amazon product ID).",
-            schema: z.object({
-                asin: z.string().describe("The ASIN (Amazon product ID) to retrieve reviews for")
-            }),
-            func: async ({ asin }) => {
+            // schema: z.object({
+            //     asin: z.string().describe("The ASIN (Amazon product ID) to retrieve reviews for")
+            // }),
+            func: async ( asin ) => {
                 try {
-                    // Sanitize ASIN input
                     const sanitizedAsin = sanitizeKey(asin);
                     
-                    // Prepare AQL query
                     const aql = `
                     FOR review IN Reviews
                         FILTER review.asin == @asin
@@ -90,14 +88,12 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
                         }
                     `;
                     
-                    // Execute query
                     const reviews = await executeAqlQuery(aql, { asin: sanitizedAsin });
                     
                     if (!reviews || reviews.length === 0) {
                         return `No reviews found for product with ASIN ${asin}.`;
                     }
                     
-                    // Get product title
                     const productQuery = `
                     FOR product IN Products
                         FILTER product._key == @asin
@@ -107,7 +103,6 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
                     const productTitles = await executeAqlQuery(productQuery, { asin: sanitizedAsin });
                     const productTitle = productTitles.length > 0 ? productTitles[0] : "Unknown Product";
                     
-                    // Format results
                     let response = `Reviews for ${productTitle} (ASIN: ${asin}):\n\n`;
                     reviews.forEach((review, i) => {
                         response += `${i+1}. ${review.title} - ${review.rating}/5.0 stars\n`;
@@ -130,14 +125,13 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
         new DynamicTool({
             name: "analyze_product_network",
             description: "Uses graph analytics to analyze the product network. Can identify related products, popular items, and customer patterns.",
-            schema: z.object({
-                query: z.string().describe("The type of analysis to perform, such as finding popular products or similar products to a specific ASIN.")
-            }),
-            func: async ({ query }) => {
+            // schema: z.object({
+            //     query: z.string().describe("The type of analysis to perform, such as finding popular products or similar products to a specific ASIN.")
+            // }),
+            func: async ( query ) => {
                 try {
-                    // Parse the query to determine what kind of analysis to perform
+                    //TODO: expand this to use vector similiarity search for related products
                     if (query.toLowerCase().includes("popular") || query.toLowerCase().includes("best selling")) {
-                        // Find most reviewed products
                         const aql = `
                         FOR product IN Products
                             SORT product.rating_count DESC
@@ -167,7 +161,6 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
                         const asin = asinMatch ? asinMatch[0] : null;
                         
                         if (asin) {
-                            // Find related products (variants or commonly bought together)
                             const aql = `
                             LET variants = (
                                 FOR v, e IN 1..1 ANY @asin VariantOf
@@ -203,7 +196,7 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
                             
                             if (result.variants && result.variants.length > 0) {
                                 response += "Product variants:\n";
-                                result.variants.forEach((variant, i) => {
+                                result.variants.forEach((variant: any, i: any) => {
                                     response += `${i+1}. ${variant.title || 'Unknown'}\n`;
                                     response += `   Price: $${variant.price || 0}\n`;
                                     response += `   ASIN: ${variant._key || 'Unknown'}\n\n`;
@@ -212,7 +205,7 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
                             
                             if (result.similar && result.similar.length > 0) {
                                 response += "Similar products by price and category:\n";
-                                result.similar.forEach((similar, i) => {
+                                result.similar.forEach((similar: any, i: any) => {
                                     response += `${i+1}. ${similar.title || 'Unknown'}\n`;
                                     response += `   Price: $${similar.price || 0}\n`;
                                     response += `   ASIN: ${similar._key || 'Unknown'}\n\n`;
@@ -250,58 +243,70 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
             }
         }),
 
-        new DynamicTool({
-            name: "analyze_image",
-            description: "Analyzes an image from a URL or base64 string to identify products or extract relevant information.",
-            schema: z.object({
-                imageData: z.string().describe("Either a URL to an image or a base64-encoded image string"),
-                isUrl: z.boolean().describe("Whether the imageData is a URL (true) or base64 string (false)")
-            }),
-            func: async ({ imageData, isUrl }) => {
-                try {
-                    // Prepare the message content based on whether we have a URL or base64 data
-                    let content;
-                    if (isUrl) {
-                        content = [
-                            { type: "text", text: "What products can you see in this image? Please describe them in detail." },
-                            { type: "image_url", image_url: { url: imageData } }
-                        ];
-                    } else {
-                        // For base64, we need to ensure it has the proper format
-                        const formattedBase64 = imageData.startsWith('data:') 
-                            ? imageData 
-                            : `data:image/jpeg;base64,${imageData}`;
+        // new DynamicStructuredTool({
+        //     // WILL BE REPLACED WITH GOOGLE LENS INTEGRATION
+        //     name: "analyze_image",
+        //     description: "Analyzes an image from a URL or base64 string to identify products or extract relevant information.",
+        //     schema: z.object({
+        //         imageData: z.string().describe("Either a URL to an image or a base64-encoded image string"),
+        //         isUrl: z.boolean().describe("Whether the imageData is a URL (true) or base64 string (false)")
+        //     }),
+        //     func: async ({ imageData, isUrl }) => {
+        //         try {
+        //             let content, formattedBase64;
+        //             if (isUrl) {
+        //                 content = [
+        //                     { type: "text", text: "What products can you see in this image? Please describe them in detail." },
+        //                     { type: "image_url", image_url: { url: imageData } }
+        //                 ];
+        //             } else {
+        //                 formattedBase64 = imageData.startsWith('data:') 
+        //                     ? imageData 
+        //                     : `data:image/jpeg;base64,${imageData}`;
                             
-                        content = [
-                            { type: "text", text: "What products can you see in this image? Please describe them in detail." },
-                            { type: "image_url", image_url: { url: formattedBase64 } }
-                        ];
-                    }
+        //                 content = [
+        //                     { type: "text", text: "What products can you see in this image? Please describe them in detail." },
+        //                     { type: "image_url", image_url: { url: formattedBase64 } }
+        //                 ];
+        //             }
                     
-                    // Call the OpenAI API to analyze the image
-                    const response = await openai.chat.completions.create({
-                        model: "gpt-4o",
-                        messages: [{ role: "user", content }],
-                        max_tokens: 500
-                    });
+        //             const response = await openai.chat.completions.create({
+        //                 model: "gpt-4o",
+        //                 stream: false,
+        //                 messages: [
+        //                     { 
+        //                         role: "user", 
+        //                         content: [
+        //                             { type: "text", text: "What products can you see in this image? Please describe them in detail." },
+        //                             { 
+        //                                 type: "image_url", 
+        //                                 image_url: isUrl 
+        //                                     ? { url: imageData }
+        //                                     : { url: formattedBase64 }
+        //                             }
+        //                         ]
+        //                     }
+        //                 ],
+        //                 max_tokens: 500
+        //             });
                     
-                    const analysis = response.choices[0].message.content;
-                    return analysis || "I couldn't analyze the image properly.";
+        //             const analysis = response.choices[0].message.content;
+        //             return analysis || "I couldn't analyze the image properly.";
                     
-                } catch (error) {
-                    console.error("Error analyzing image:", error);
-                    return "Sorry, I couldn't analyze the image at this time due to a technical issue.";
-                }
-            }
-        }),
+        //         } catch (error) {
+        //             console.error("Error analyzing image:", error);
+        //             return "Sorry, I couldn't analyze the image at this time due to a technical issue.";
+        //         }
+        //     }
+        // }),
 
         new DynamicTool({
             name: "search_internet",
             description: "Simulates internet search capability to find information that might not be in the database.",
-            schema: z.object({
-                query: z.string().describe("The search query to look up on the internet")
-            }),
-            func: async ({ query }) => {
+            // schema: z.object({
+            //     query: z.string().describe("The search query to look up on the internet")
+            // }),
+            func: async ( query ) => {
                 // This is a placeholder for an actual internet search capability
                 // In a real implementation, you would integrate with a search API
                 return `(Note: In a real implementation, this would search the internet for "${query}". For now, please let the user know that internet search is a simulated capability and recommend focusing on the product database queries instead.)`;
@@ -310,7 +315,6 @@ const createGraphRagTools = (embeddingsModel: OpenAIEmbeddings) => {
     ];
 };
 
-// Define the agent memory class to keep track of conversations
 class ConversationMemory implements BaseChatMemory {
     chatHistory: ChatMessageHistory;
     returnMessages: boolean;
@@ -320,6 +324,9 @@ class ConversationMemory implements BaseChatMemory {
     constructor() {
         this.chatHistory = new ChatMessageHistory();
         this.returnMessages = true;
+    }
+    get memoryKeys(): string[] {
+        throw new Error('Method not implemented.');
     }
     
     async loadMemoryVariables(_values: Record<string, any>) {
@@ -340,7 +347,6 @@ class ConversationMemory implements BaseChatMemory {
             ? outputValues[this.outputKey]
             : outputValues.output || outputValues.response;
         
-        // Add the input and output values to chat history
         await this.chatHistory.addUserMessage(input);
         await this.chatHistory.addAIMessage(output);
     }
@@ -350,16 +356,14 @@ class ConversationMemory implements BaseChatMemory {
     }
 }
 
-// Create the agent with streaming capability
 export class GraphRagAgent {
     private llm: ChatOpenAI;
     private embeddingsModel: OpenAIEmbeddings;
-    private tools: DynamicTool[];
+    private tools: DynamicTool[] | StructuredTool[] | DynamicStructuredTool[];
     private memory: ConversationMemory;
-    private executor: AgentExecutor;
+    private executor: AgentExecutor | null = null;
     
     constructor() {
-        // Initialize the models
         this.llm = new ChatOpenAI({
             modelName: "gpt-4o",
             temperature: 0.2,
@@ -370,33 +374,34 @@ export class GraphRagAgent {
             modelName: "text-embedding-3-small",
         });
         
-        // Create the tools
         this.tools = createGraphRagTools(this.embeddingsModel);
         
-        // Create memory instance
         this.memory = new ConversationMemory();
+    }
+    
+    async initialize(): Promise<void> {
+        if (this.executor) return;
         
-        // Create the agent
         const systemMessage = `You are an expert AI assistant with access to an ArangoDB graph database of Amazon product data.
 You have tools to search for products, analyze reviews, explore the product network graph, and analyze images of products.
 When users ask about products, try to understand what they're looking for and use your tools to provide helpful information.
 If a user shares an image, analyze what products are visible and try to find similar items in the database.
 Always be helpful, informative, and focus on providing accurate product information based on the available data.`;
 
-        // Create the prompt
+        const formattedSystemtMessage = SystemMessagePromptTemplate.fromTemplate(systemMessage);        
+
         const prompt = ChatPromptTemplate.fromMessages([
-            ["system", systemMessage],
-            ["human", "{input}"],
+            formattedSystemtMessage,
+            ["user", "{input}"],
+            new MessagesPlaceholder("agent_scratchpad"),
         ]);
         
-        // Create the agent
-        const agent = createOpenAIToolsAgent({
+        const agent = await createOpenAIToolsAgent({
             llm: this.llm,
             tools: this.tools,
             prompt: prompt,
         });
         
-        // Create the executor
         this.executor = AgentExecutor.fromAgentAndTools({
             agent,
             tools: this.tools,
@@ -414,15 +419,20 @@ Always be helpful, informative, and focus on providing accurate product informat
      */
     async processMessage(message: string, callback?: (chunk: string) => void): Promise<string> {
         try {
+            if (!this.executor) {
+                await this.initialize();
+            }
+            
             if (callback) {
-                // For streaming mode
-                const result = await this.executor.invoke(
+                // Streaming mode
+                const result = await this.executor!.invoke(
+   
                     { input: message },
                     {
                         callbacks: [
                             {
-                                handleLLMNewToken(token: string) {
-                                    callback(token);
+                                handleLLMNewToken(chunk: string) {
+                                    callback(chunk);
                                 },
                             },
                         ],
@@ -431,7 +441,7 @@ Always be helpful, informative, and focus on providing accurate product informat
                 return result.output;
             } else {
                 // Non-streaming mode
-                const result = await this.executor.invoke({ input: message });
+                const result = await this.executor!.invoke({ input: message });
                 return result.output;
             }
         } catch (error) {
@@ -461,18 +471,19 @@ Always be helpful, informative, and focus on providing accurate product informat
             }
             
             // Call the image analysis tool directly
+            // Process with the agent
+            if (!this.executor) {
+                await this.initialize();
+            }
             const imageAnalysis = await imageAnalysisTool.invoke({ 
                 imageData, 
                 isUrl 
             });
-            
-            // Combine the image analysis with the user's message
             const combinedInput = `User message: ${message}\n\nImage analysis: ${imageAnalysis}`;
             
-            // Process with the agent
             if (callback) {
                 // For streaming mode
-                const result = await this.executor.invoke(
+                const result = await this.executor!.invoke(
                     { input: combinedInput },
                     {
                         callbacks: [
@@ -483,16 +494,19 @@ Always be helpful, informative, and focus on providing accurate product informat
                             },
                         ],
                     }
-                );
+                );  
                 return result.output;
             } else {
                 // Non-streaming mode
-                const result = await this.executor.invoke({ input: combinedInput });
+                if (!this.executor) {
+                    await this.initialize();
+                }
+                const result = await this.executor!.invoke({ input: combinedInput });
                 return result.output;
             }
         } catch (error) {
             console.error("Error processing message with image:", error);
-            return "Sorry, I encountered an error while processing your image and message.";
+            return "Sorry, I encountered an error while processing your request.";
         }
     }
     
@@ -500,9 +514,10 @@ Always be helpful, informative, and focus on providing accurate product informat
      * Clear the conversation history
      */
     async clearHistory(): Promise<void> {
-        await this.memory.clear();
+        if (this.memory) await this.memory.clear();
     }
 }
 
-// Create and export a singleton instance
 export const graphRagAgent = new GraphRagAgent();
+
+void graphRagAgent.initialize();
