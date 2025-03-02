@@ -43,12 +43,11 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('chat:message:image', async (data: { message: string, imageData: string, isUrl: boolean }) => {
+    socket.on('chat:message:image', async (data: { message: string, imageData: string }) => {
         try {
             await graphRagAgent.processMessageWithImage(
                 data.message,
                 data.imageData,
-                data.isUrl,
                 (chunk) => {
                     socket.emit('chat:response:chunk', { chunk });
                 }

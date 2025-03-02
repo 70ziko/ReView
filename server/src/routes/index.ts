@@ -31,7 +31,7 @@ router.post('/chat', async (req: Request, res: Response): Promise<void> => {
 
 router.post('/chat/image', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { message, imageData, isUrl } = req.body;
+        const { message, imageData } = req.body;
         
         if (!message) {
             res.status(400).json({ error: 'Message is required' });
@@ -44,8 +44,7 @@ router.post('/chat/image', async (req: Request, res: Response): Promise<void> =>
         
         const response = await graphRagAgent.processMessageWithImage(
             message,
-            imageData,
-            isUrl === true
+            imageData
         );
         
         res.json({ response });

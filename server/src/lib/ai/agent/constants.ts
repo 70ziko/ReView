@@ -11,7 +11,7 @@ export const LLM_CONFIG = {
 } as const;
 
 export const EMBEDDINGS_CONFIG = {
-    modelName: "text-embedding-3-small",
+    modelName: "text-embedding-3-large",
 } as const;
 
 export const AGENT_CONFIG = {
