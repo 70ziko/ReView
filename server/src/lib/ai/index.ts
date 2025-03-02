@@ -4,7 +4,7 @@ import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
 import { DynamicStructuredTool, DynamicTool, StructuredTool } from 'langchain/tools';
 import { BaseChatMemory } from 'langchain/memory';
 import { ChatMessageHistory } from 'langchain/stores/message/in_memory';
-import { db, executeAqlQuery, sanitizeKey } from '../index.js';
+import { db, executeAqlQuery, sanitizeKey } from '../../services/db/index.js';
 import { ChatPromptTemplate, MessagesPlaceholder, SystemMessagePromptTemplate } from '@langchain/core/prompts';
 // import { OpenAI } from 'openai';
 // import { z } from 'zod';

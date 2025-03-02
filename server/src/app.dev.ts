@@ -6,7 +6,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import routes from './routes/index.js';
 import { graphRagAgent } from './lib/ai/index.js';
-import { initializeDatabase } from './lib/index.js';
+import { initializeDatabase } from './services/db/index.js';
 
 dotenv.config({ path: '../.env' });
 

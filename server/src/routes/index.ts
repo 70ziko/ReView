@@ -75,7 +75,9 @@ router.post('/image/process', async (req: Request, res: Response): Promise<void>
             res.status(400).json({ error: 'Image data is required' });
             return;
         }
-        
+        if (!isUrl) {
+            console.log('Processing base64 image data:', imageData);
+        }
         // In a real implementation, this would process the image
         // Here we're returning dummy data
         
