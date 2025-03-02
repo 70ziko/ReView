@@ -1,7 +1,14 @@
+# MacOs
 .DS_Store
+
+# Python
 __pycache__
 *.pyc
 *.pyo
 *.pyd
 .env
 amazon_data/
+
+# Node.js
+node_modules/
+dist/
