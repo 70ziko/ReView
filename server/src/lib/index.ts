@@ -1,4 +1,4 @@
-import { Database, aql } from 'arangojs';
+import { Database } from 'arangojs';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '../.env' });
@@ -54,58 +54,58 @@ export const ensureCollectionsExist = async (): Promise<void> => {
                 
                 if (collection === "Products") {
                     await db.collection(collection).ensureIndex({ 
-                        type: "hash", 
+                        type: "persistent", 
                         fields: ["_key"], 
                         unique: true 
                     });
                     await db.collection(collection).ensureIndex({ 
-                        type: "hash", 
+                        type: "persistent", 
                         fields: ["main_category"], 
                         unique: false 
                     });
                     await db.collection(collection).ensureIndex({ 
-                        type: "hash", 
+                        type: "persistent", 
                         fields: ["parent_asin"], 
                         unique: false 
                     });
                     console.log(`Created indexes for ${collection}`);
                 } else if (collection === "Reviews") {
                     await db.collection(collection).ensureIndex({ 
-                        type: "hash", 
+                        type: "persistent", 
                         fields: ["asin"], 
                         unique: false 
                     });
                     await db.collection(collection).ensureIndex({ 
-                        type: "hash", 
+                        type: "persistent", 
                         fields: ["user_id"], 
                         unique: false 
                     });
                     await db.collection(collection).ensureIndex({ 
-                        type: "skiplist", 
+                        type: "persistent", 
                         fields: ["timestamp"], 
                         unique: false 
                     });
                     await db.collection(collection).ensureIndex({ 
-                        type: "skiplist", 
+                        type: "persistent", 
                         fields: ["rating"], 
                         unique: false 
                     });
                     console.log(`Created indexes for ${collection}`);
                 } else if (collection === "Users") {
                     await db.collection(collection).ensureIndex({ 
-                        type: "hash", 
+                        type: "persistent", 
                         fields: ["_key"], 
                         unique: true 
                     });
                     console.log(`Created indexes for ${collection}`);
                 } else if (collection === "Categories") {
                     await db.collection(collection).ensureIndex({ 
-                        type: "hash", 
+                        type: "persistent", 
                         fields: ["_key"], 
                         unique: true 
                     });
                     await db.collection(collection).ensureIndex({ 
-                        type: "skiplist", 
+                        type: "persistent", 
                         fields: ["level"], 
                         unique: false 
                     });
@@ -137,31 +137,28 @@ export const ensureGraphExists = async (): Promise<void> => {
         const graphExists = await db.graph(GRAPH_NAME).exists();
         
         if (!graphExists) {
-            const graph = await db.createGraph(GRAPH_NAME);
-            
-            await graph.addEdgeDefinition({
-                collection: "HasReview",
-                from: ["Products"],
-                to: ["Reviews"]
-            });
-            
-            await graph.addEdgeDefinition({
-                collection: "WrittenBy",
-                from: ["Reviews"],
-                to: ["Users"]
-            });
-            
-            await graph.addEdgeDefinition({
-                collection: "BelongsToCategory",
-                from: ["Products"],
-                to: ["Categories"]
-            });
-            
-            await graph.addEdgeDefinition({
-                collection: "VariantOf",
-                from: ["Products"],
-                to: ["Products"]
-            });
+            await db.createGraph(GRAPH_NAME, [
+                {
+                    collection: "HasReview",
+                    from: ["Products"],
+                    to: ["Reviews"]
+                },
+                {
+                    collection: "WrittenBy",
+                    from: ["Reviews"],
+                    to: ["Users"]
+                },
+                {
+                    collection: "BelongsToCategory",
+                    from: ["Products"],
+                    to: ["Categories"]
+                },
+                {
+                    collection: "VariantOf",
+                    from: ["Products"],
+                    to: ["Products"]
+                }
+            ]);
             
             console.log(`Created graph: ${GRAPH_NAME}`);
         } else {
