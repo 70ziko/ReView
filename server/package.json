@@ -2,9 +2,11 @@
   "name": "server",
   "version": "0.1.0",
   "description": "The Api for the ReView application",
-  "main": "app.ts",
+  "main": "app.*.ts",
   "scripts": {
-    "start": "npx tsx --env-file=.env --watch  src/index.ts",
+    "dev": "npx tsx --env-file=../.env --watch  src/app.dev.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "70ziko",
