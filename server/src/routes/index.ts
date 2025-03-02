@@ -29,7 +29,6 @@ router.post('/chat', async (req: Request, res: Response): Promise<void> => {
     }
 });
 
-
 router.post('/chat/image', async (req: Request, res: Response): Promise<void> => {
     try {
         const { message, imageData, isUrl } = req.body;
@@ -69,21 +68,18 @@ router.post('/chat/clear', async (_req: Request, res: Response): Promise<void> =
 // Dummy route for image processing and product information
 router.post('/image/process', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { imageData, isUrl } = req.body;
+        const { imageData } = req.body;
         
         if (!imageData) {
             res.status(400).json({ error: 'Image data is required' });
             return;
-        }
-        if (!isUrl) {
-            console.log('Processing base64 image data:', imageData);
         }
         // In a real implementation, this would process the image
         // Here we're returning dummy data
         
         const dummyResponse = {
             product_name: "Premium Bluetooth Headphones",
-            score: 85,
+            score: 5,
             image_url: "https://example.com/images/headphones.jpg",
             general_review: "High-quality wireless headphones with excellent sound quality and comfortable fit. Battery life could be improved.",
             amazon_reviews_ref: "https://amazon.com/product/123456/reviews",
