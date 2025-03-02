@@ -1,6 +1,6 @@
-# Review Bot
+# Revie - Reviews at a Glance
 
-A bot to quickly check, summarize and present reviews of a product with just one photo or text, able to suggest alternatives and compare prices.
+Revie is a bot to quickly check, summarize and present reviews of a product with just one photo or text, able to suggest alternatives and compare prices.
 
 ## Overview
 
