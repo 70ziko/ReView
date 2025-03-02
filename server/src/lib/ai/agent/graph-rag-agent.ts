@@ -5,7 +5,7 @@ import { ChatPromptTemplate, MessagesPlaceholder, SystemMessagePromptTemplate } 
 import { ConversationMemory } from '../memory/conversation-memory.js';
 import { createProductTools } from '../tools/product-tools.js';
 import { createNetworkTools } from '../tools/network-tools.js';
-import { createSearchTools } from '../tools/search-tools.js';
+// import { createSearchTools } from '../tools/search-tools.js';
 import { AGENT_CONFIG, EMBEDDINGS_CONFIG, LLM_CONFIG, SYSTEM_MESSAGE } from './constants.js';
 import { GraphRagTools } from '../tools/types.js';
 
@@ -20,15 +20,16 @@ export class GraphRagAgent {
         this.llm = new ChatOpenAI(LLM_CONFIG);
         this.embeddingsModel = new OpenAIEmbeddings(EMBEDDINGS_CONFIG);
         
-        // Initialize tools with dependencies
         const toolDeps = { embeddingsModel: this.embeddingsModel };
         this.tools = [
             ...createProductTools(toolDeps),
             ...createNetworkTools(toolDeps),
-            ...createSearchTools(toolDeps)
+            // ...createSearchTools(toolDeps)
         ];
         
         this.memory = new ConversationMemory();
+        this.memory.memoryKey = "history"; 
+        this.memory.returnMessages = true; 
     }
     
     async initialize(): Promise<void> {
@@ -38,6 +39,7 @@ export class GraphRagAgent {
 
         const prompt = ChatPromptTemplate.fromMessages([
             formattedSystemMessage,
+            new MessagesPlaceholder("history"), 
             ["user", "{input}"],
             new MessagesPlaceholder("agent_scratchpad"),
         ]);
@@ -92,18 +94,15 @@ export class GraphRagAgent {
             return "Sorry, I encountered an error while processing your request.";
         }
     }
-    
     /**
      * Process an image along with a message
      * @param message The user's message
      * @param imageData URL or base64 data of the image
-     * @param isUrl Whether the imageData is a URL
      * @param callback Optional callback function for streaming responses
      */
     async processMessageWithImage(
         message: string,
         imageData: string,
-        isUrl: boolean,
         callback?: (chunk: string) => void
     ): Promise<string> {
         try {
@@ -111,12 +110,15 @@ export class GraphRagAgent {
                 await this.initialize();
             }
 
-            const combinedInput = `User message: ${message}\n\nImage analysis: Image processing is currently not implemented.`;
+            const input = {
+                input: message,
+                image: imageData // image URL or base64 string
+            };
             
             if (callback) {
                 // For streaming mode
                 const result = await this.executor!.invoke(
-                    { input: combinedInput },
+                    input,
                     {
                         callbacks: [
                             {
@@ -130,7 +132,7 @@ export class GraphRagAgent {
                 return result.output;
             } else {
                 // Non-streaming mode
-                const result = await this.executor!.invoke({ input: combinedInput });
+                const result = await this.executor!.invoke(input);
                 return result.output;
             }
         } catch (error) {

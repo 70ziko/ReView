@@ -6,6 +6,7 @@ export class ConversationMemory implements BaseChatMemory {
     returnMessages: boolean;
     inputKey?: string;
     outputKey?: string;
+    memoryKey: string = "history";
     
     constructor() {
         this.chatHistory = new ChatMessageHistory();
@@ -13,15 +14,15 @@ export class ConversationMemory implements BaseChatMemory {
     }
     
     get memoryKeys(): string[] {
-        throw new Error('Method not implemented.');
+        return [this.memoryKey];
     }
     
     async loadMemoryVariables(_values: Record<string, any>) {
         const messages = await this.chatHistory.getMessages();
         if (this.returnMessages) {
-            return { messages };
+            return { [this.memoryKey]: messages };
         }
-        return { history: messages.map((message) => message.content).join("\n") };
+        return { [this.memoryKey]: messages.map((message) => message.content).join("\n") };
     }
     
     async saveContext(
