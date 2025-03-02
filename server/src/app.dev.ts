@@ -3,7 +3,9 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
+import session from 'express-session';
+import { IncomingMessage } from 'http';
 import routes from './routes/index.js';
 import { graphRagAgent } from './lib/ai/index.js';
 import { initializeDatabase } from './services/db/index.js';
@@ -20,57 +22,108 @@ const io = new Server(httpServer, {
     },
 });
 
+declare module 'express-session' {
+  interface SessionData {
+    userId: string;
+  }
+}
+
+const sessionMiddleware = session({
+    secret: process.env.SESSION_SECRET || 'default_secret_key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', 
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+});
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
+app.use(sessionMiddleware);
+interface SessionIncomingMessage extends IncomingMessage {
+    session: any;
+}
 
-app.use('/api', routes);
+interface SessionSocket extends Socket {
+    request: SessionIncomingMessage;
+}
 
-io.on('connection', (socket) => {
+// Make session available in Socket.IO
+const wrap = (middleware: any) => (socket: any, next: any) => middleware(socket.request, {}, next);
+io.use(wrap(sessionMiddleware));
+
+app.use('/api', (req, _res, next) => {
+    if (!req.session.userId) {
+      req.session.userId = Math.random().toString(36).substring(2, 15) + 
+                            Math.random().toString(36).substring(2, 15);
+    }
+    next();
+  }, routes);
+
+io.on('connection', (socket: Socket) => {
+    const sessionSocket = socket as SessionSocket;
+    const session = sessionSocket.request.session;
     console.log(`Client connected: ${socket.id}`);
+    // Initialize user session if needed
+    if (!session) {
+        sessionSocket.request.session = { chatHistory: [] };
+        sessionSocket.request.session.save();
+    }
 
-    socket.on('chat:message', async (data: { message: string }) => {
+    sessionSocket.on('chat:message', async (data: { message: string }) => {
         try {
+            session.save();
+            
             await graphRagAgent.processMessage(data.message, (chunk) => {
-                socket.emit('chat:response:chunk', { chunk });
+                sessionSocket.emit('chat:response:chunk', { chunk });
             });
             
-            socket.emit('chat:response:done');
+            sessionSocket.emit('chat:response:done');
         } catch (error) {
             console.error('Error processing chat message:', error);
-            socket.emit('chat:error', { error: 'Failed to process your message' });
+            sessionSocket.emit('chat:error', { error: 'Failed to process your message' });
         }
     });
 
-    socket.on('chat:message:image', async (data: { message: string, imageData: string }) => {
+    sessionSocket.on('chat:message:image', async (data: { message: string, imageData: string }) => {
         try {
+            session.save();
+            
             await graphRagAgent.processMessageWithImage(
                 data.message,
                 data.imageData,
                 (chunk) => {
-                    socket.emit('chat:response:chunk', { chunk });
+                    sessionSocket.emit('chat:response:chunk', { chunk });
                 }
             );
             
-            socket.emit('chat:response:done');
+            sessionSocket.emit('chat:response:done');
         } catch (error) {
             console.error('Error processing chat message with image:', error);
-            socket.emit('chat:error', { error: 'Failed to process your message with image' });
+            sessionSocket.emit('chat:error', { error: 'Failed to process your message with image' });
         }
     });
 
-    socket.on('chat:clear', async () => {
+    sessionSocket.on('chat:clear', async () => {
         try {
             await graphRagAgent.clearHistory();
-            socket.emit('chat:cleared');
+            // Clear session chat history
+            session.save();
+            sessionSocket.emit('chat:cleared');
         } catch (error) {
             console.error('Error clearing chat history:', error);
-            socket.emit('chat:error', { error: 'Failed to clear chat history' });
+            sessionSocket.emit('chat:error', { error: 'Failed to clear chat history' });
         }
     });
 
-    socket.on('disconnect', () => {
+    sessionSocket.on('chat:get_history', () => {
+        sessionSocket.emit('chat:history', { history: session.chatHistory || [] });
+    });
+
+    sessionSocket.on('disconnect', () => {
         console.log(`Client disconnected: ${socket.id}`);
     });
 });
