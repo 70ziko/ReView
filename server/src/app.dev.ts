@@ -7,7 +7,7 @@ import { Server, Socket } from 'socket.io';
 import session from 'express-session';
 import { IncomingMessage } from 'http';
 import routes from './routes/index.js';
-import { graphRagAgent } from './lib/ai/index.js';
+import { RagChatAssistant } from './lib/ai/index.js';
 import { initializeDatabase } from './services/db/index.js';
 
 dotenv.config({ path: '../.env' });
@@ -77,7 +77,7 @@ io.on('connection', (socket: Socket) => {
         try {
             session.save();
             
-            await graphRagAgent.processMessage(data.message, (chunk) => {
+            await RagChatAssistant.processMessage(data.message, (chunk) => {
                 sessionSocket.emit('chat:response:chunk', { chunk });
             });
             
@@ -92,7 +92,7 @@ io.on('connection', (socket: Socket) => {
         try {
             session.save();
             
-            await graphRagAgent.processMessageWithImage(
+            await RagChatAssistant.processMessageWithImage(
                 data.message,
                 data.imageData,
                 (chunk) => {
@@ -109,7 +109,7 @@ io.on('connection', (socket: Socket) => {
 
     sessionSocket.on('chat:clear', async () => {
         try {
-            await graphRagAgent.clearHistory();
+            await RagChatAssistant.clearHistory();
             session.save();
             sessionSocket.emit('chat:cleared');
         } catch (error) {

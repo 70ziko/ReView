@@ -6,10 +6,10 @@ import { ConversationMemory } from '../memory/conversation-memory.js';
 import { createProductTools } from '../tools/product-tools.js';
 import { createNetworkTools } from '../tools/network-tools.js';
 import { createSearchTools } from '../tools/search-tools.js';
-import { AGENT_CONFIG, EMBEDDINGS_CONFIG, LLM_CONFIG, SYSTEM_MESSAGE } from './constants.js';
+import { AGENT_CONFIG, EMBEDDINGS_CONFIG, LLM_CONFIG, ASSISTANT_SYSTEM_MESSAGE } from './constants.js';
 import { GraphRagTools } from '../tools/types.js';
 
-export class GraphRagAgent {
+export class RagChatAssistant {
     private llm: ChatOpenAI;
     private embeddingsModel: OpenAIEmbeddings;
     private tools: GraphRagTools;
@@ -35,7 +35,7 @@ export class GraphRagAgent {
     async initialize(): Promise<void> {
         if (this.executor) return;
         
-        const formattedSystemMessage = SystemMessagePromptTemplate.fromTemplate(SYSTEM_MESSAGE);        
+        const formattedSystemMessage = SystemMessagePromptTemplate.fromTemplate(ASSISTANT_SYSTEM_MESSAGE);        
 
         const prompt = ChatPromptTemplate.fromMessages([
             formattedSystemMessage,

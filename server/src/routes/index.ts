@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Router } from 'express';
-import { graphRagAgent } from '../lib/ai/index.js';
+import { RagChatAssistant } from '../lib/ai/index.js';
 
 const router = Router();
 
@@ -21,7 +21,7 @@ router.post('/chat', async (req: Request, res: Response): Promise<void> => {
             return;
         }
         
-        const response = await graphRagAgent.processMessage(message);
+        const response = await RagChatAssistant.processMessage(message);
         res.json({ response });
     } catch (error) {
         console.error('Error processing chat message:', error);
@@ -42,7 +42,7 @@ router.post('/chat/image', async (req: Request, res: Response): Promise<void> =>
             return;
         }
         
-        const response = await graphRagAgent.processMessageWithImage(
+        const response = await RagChatAssistant.processMessageWithImage(
             message,
             imageData
         );
@@ -56,7 +56,7 @@ router.post('/chat/image', async (req: Request, res: Response): Promise<void> =>
 
 router.post('/chat/clear', async (_req: Request, res: Response): Promise<void> => {
     try {
-        await graphRagAgent.clearHistory();
+        await RagChatAssistant.clearHistory();
         res.json({ status: 'success', message: 'Chat history cleared' });
     } catch (error) {
         console.error('Error clearing chat history:', error);
