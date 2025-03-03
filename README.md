@@ -1,10 +1,10 @@
-# Revie - Reviews at a Glance
+# Revi - Reviews at a Glance
 
-Revie is a bot to quickly check, summarize and present reviews of a product with just one photo or text, able to suggest alternatives and compare prices.
+Revi is a bot to quickly check, summarize and present reviews of a product with just one photo or text, able to suggest alternatives and compare prices.
 
 ## Overview
 
-Review Bot is an AI-powered application that helps users get product information, reviews, and comparisons by simply uploading a photo or sending a text query. The system leverages vector search, graph databases, and AI to provide comprehensive product analysis.
+Revi, the Review Bot is an AI-powered application that helps users get product information, reviews, and comparisons by simply uploading a photo or sending a text query. The system leverages vector search, graph databases, and AI to provide comprehensive product analysis.
 
 ## Architecture
 

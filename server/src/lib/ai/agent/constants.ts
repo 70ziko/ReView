@@ -1,13 +1,22 @@
-export const SYSTEM_MESSAGE = `You are an expert AI assistant with access to an ArangoDB graph database of Amazon product data.
-You have tools to search for products, analyze reviews, explore the product network graph, and analyze images of products.
-When users ask about products, try to understand what they're looking for and use your tools to provide helpful information.
-If a user shares an image, analyze what products are visible and try to find similar items in the database.
-Always be helpful, informative, and focus on providing accurate product information based on the available data.`;
+export const WORKFLOW_SYSTEM_MESSAGE = `You are Revi, a helpful assistant with the goal of increasing consumer awareness. For this purpose you will receive a json object with results from the google lens API and based on the results you will conduct research across the graphRAG database to provide the user with relevant information. The returned information should be in a json format according to the structure. You can also use the google lens API to get more information about the objects in the image. If information couldn't be found use the google search tool to find relevant information.`;
 
+// export const AGENT_SCRATCHPAD = `{
+//     "google_lens": {
+//         "objects": [
+//             {
+//                 "name": "object1",
+//                 "confidence": 0.9
+//             },
+//         ] 
+//     }
+// }`;
+
+export const SYSTEM_MESSAGE = WORKFLOW_SYSTEM_MESSAGE;
 export const LLM_CONFIG = {
-    modelName: "gpt-4o",
+    modelName: "gpt-4o-mini",
     temperature: 0.2,
     streaming: true,
+    maxTokens: 500,
 } as const;
 
 export const EMBEDDINGS_CONFIG = {
