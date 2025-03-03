@@ -126,7 +126,7 @@ The system uses several AI tools:
    - `ARANGO_URL`: ArangoDB connection URL
    - `ARANGO_DB`: Database name
    - `ARANGO_USERNAME`: Database username
-   - `ARANGO_DB_ROOT_PASS`: Database password
+   - `ARANGO_DB_PASS`: Database password
 4. Run the server with `npm start`
 
 ## Environment Variables
@@ -136,7 +136,7 @@ OPENAI_API_KEY=your_openai_api_key
 ARANGO_URL=https://your_arango_instance.arangodb.cloud:8529
 ARANGO_DB=_system
 ARANGO_USERNAME=root
-ARANGO_DB_ROOT_PASS=your_password
+ARANGO_DB_PASS=your_password
 ```
 
 ## Future Enhancements

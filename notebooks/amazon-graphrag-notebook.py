@@ -54,7 +54,7 @@ load_dotenv()
 
 # Connect to the ArangoDB database
 client = ArangoClient(hosts="https://17c43fa12737.arangodb.cloud:8529")
-db = client.db("_system", username="root", password=os.getenv("ARANGO_DB_ROOT_PASS"), verify=True)
+db = client.db("_system", username="root", password=os.getenv("ARANGO_DB_PASS"), verify=True)
 
 print(f"Connected to ArangoDB: {client.version}")
 
