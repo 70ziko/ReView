@@ -67,7 +67,7 @@ io.on('connection', (socket: Socket) => {
     const sessionSocket = socket as SessionSocket;
     const session = sessionSocket.request.session;
     console.log(`Client connected: ${socket.id}`);
-    // Initialize user session if needed
+
     if (!session) {
         sessionSocket.request.session = { chatHistory: [] };
         sessionSocket.request.session.save();
@@ -110,7 +110,6 @@ io.on('connection', (socket: Socket) => {
     sessionSocket.on('chat:clear', async () => {
         try {
             await graphRagAgent.clearHistory();
-            // Clear session chat history
             session.save();
             sessionSocket.emit('chat:cleared');
         } catch (error) {

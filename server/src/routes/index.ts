@@ -78,7 +78,7 @@ router.post('/image/process', async (req: Request, res: Response): Promise<void>
         
         const dummyResponse = {
             product_name: "Premium Bluetooth Headphones",
-            score: 5,
+            score: 3,
             image_url: "https://example.com/images/headphones.jpg",
             general_review: "High-quality wireless headphones with excellent sound quality and comfortable fit. Battery life could be improved.",
             amazon_reviews_ref: "https://amazon.com/product/123456/reviews",
@@ -86,12 +86,12 @@ router.post('/image/process', async (req: Request, res: Response): Promise<void>
                 {
                     name: "Budget Bluetooth Headphones",
                     product_id: "BT78901",
-                    score: 72
+                    score: 4
                 },
                 {
                     name: "Premium Wired Headphones",
                     product_id: "WH45678",
-                    score: 88
+                    score: 4
                 }
             ],
             prices: {
