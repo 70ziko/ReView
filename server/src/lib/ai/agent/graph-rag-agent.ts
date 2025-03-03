@@ -5,7 +5,7 @@ import { ChatPromptTemplate, MessagesPlaceholder, SystemMessagePromptTemplate } 
 import { ConversationMemory } from '../memory/conversation-memory.js';
 import { createProductTools } from '../tools/product-tools.js';
 import { createNetworkTools } from '../tools/network-tools.js';
-// import { createSearchTools } from '../tools/search-tools.js';
+import { createSearchTools } from '../tools/search-tools.js';
 import { AGENT_CONFIG, EMBEDDINGS_CONFIG, LLM_CONFIG, SYSTEM_MESSAGE } from './constants.js';
 import { GraphRagTools } from '../tools/types.js';
 
@@ -24,7 +24,7 @@ export class GraphRagAgent {
         this.tools = [
             ...createProductTools(toolDeps),
             ...createNetworkTools(toolDeps),
-            // ...createSearchTools(toolDeps)
+            ...[createSearchTools(toolDeps)[1]], // Only use the google_lens tool
         ];
         
         this.memory = new ConversationMemory();
