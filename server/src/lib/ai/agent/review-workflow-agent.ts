@@ -31,7 +31,7 @@ export class ReviewWorkflowAgent {
     this.tools = [
       ...createProductTools(toolDeps),
       ...createNetworkTools(toolDeps),
-      ...[createSearchTools(toolDeps)[1]], // Only google_lens tool
+      createSearchTools(toolDeps)[1], // Only google_lens tool
     ];
   }
 
