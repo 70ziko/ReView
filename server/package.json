@@ -7,7 +7,8 @@
     "dev": "npx tsx --env-file=../.env --watch  src/app.dev.ts",
     "build": "tsc",
     "start": "node dist/app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --log-level warn --write './**/*.{js,ts,jsx,tsx}'"
   },
   "author": "70ziko",
   "license": "ISC",
@@ -16,7 +17,8 @@
     "@types/express": "^4.17.21",
     "@types/express-session": "^1.18.1",
     "@types/morgan": "^1.9.9",
-    "@types/node": "^22.13.8"
+    "@types/node": "^22.13.8",
+    "prettier": "3.5.3"
   },
   "dependencies": {
     "@langchain/openai": "^0.4.4",

@@ -12,7 +12,10 @@ const chatHandler: RequestHandler = async (req, res) => {
       return;
     }
 
-    const response = await ragChatAssistant.processMessage(request.session.userId, message);
+    const response = await ragChatAssistant.processMessage(
+      request.session.userId,
+      message
+    );
     res.json({ response });
   } catch (error) {
     console.error("Error processing chat message:", error);

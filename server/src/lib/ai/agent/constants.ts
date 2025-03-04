@@ -1,18 +1,18 @@
 export const LLM_CONFIG = {
-    modelName: "gpt-4o-mini",
-    temperature: 0.2,
-    streaming: true,
-    maxTokens: 500,
+  modelName: "gpt-4o-mini",
+  temperature: 0.2,
+  streaming: true,
+  maxTokens: 500,
 } as const;
 
 export const EMBEDDINGS_CONFIG = {
-    modelName: "text-embedding-3-large",
+  modelName: "text-embedding-3-large",
 } as const;
 
 export const AGENT_CONFIG = {
-    returnIntermediateSteps: false,
-    maxIterations: 5,
-    verbose: true,
+  returnIntermediateSteps: false,
+  maxIterations: 5,
+  verbose: true,
 } as const;
 
 export const WORKFLOW_SYSTEM_MESSAGE = `You are Review Getter, a workflow agent. You will receive a json object with results from the google lens API and based on the results you will conduct research across the graphRAG database to provide the user with relevant information. Use available tools to lookup information in the database and only if not found search the internet for it. The returned information should be in a json format according to the structure.`;
