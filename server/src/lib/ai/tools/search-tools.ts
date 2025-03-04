@@ -1,7 +1,7 @@
 import { DynamicTool } from "langchain/tools";
 import { GraphRagTools, ToolDependencies } from "./types.js";
 
-import serpGoogleLens from "../../../services/serp-google-lens/index.js";
+import serpGoogleLens, { GoogleLensInput } from "../../../services/serp-google-lens/index.js";
 
 export function createSearchTools(
   _dependencies: ToolDependencies
@@ -21,7 +21,8 @@ export function createSearchTools(
       description:
         "Gets image recognition and search results from the google lens API.",
       func: async (url) => {
-        return serpGoogleLens(url);
+        const input: GoogleLensInput = { url };
+        return serpGoogleLens(input);
       },
     }),
   ];
