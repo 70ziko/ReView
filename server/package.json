@@ -28,6 +28,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
+    "imgur": "^2.4.3",
     "langchain": "^0.3.19",
     "langsmith": "^0.3.11",
     "morgan": "^1.10.0",
