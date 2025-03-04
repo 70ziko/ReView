@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
-import { RagChatAssistant } from '../lib/ai';
-import { SessionSocket } from './types';
+import { RagChatAssistant } from '../lib/ai/index.js';
+import { SessionSocket } from './types.js';
+import { ConversationMemory } from '../lib/ai/memory/conversation-memory.js';
 
 export function setupChatSocket(io: Server, ragChatAssistant: RagChatAssistant) {
     io.on('connection', (socket: Socket) => {
@@ -8,9 +9,10 @@ export function setupChatSocket(io: Server, ragChatAssistant: RagChatAssistant) 
         const session = sessionSocket.request.session;
         console.log(`Client connected: ${socket.id}`);
 
-        if (!session) {
-            // sessionSocket.request.session = { chatHistory: [] };
-            sessionSocket.request.session.save();
+        if (!session.userId) {
+            session.userId = Math.random().toString(36).substring(2, 15) + 
+                            Math.random().toString(36).substring(2, 15);
+            session.save();
         }
 
         sessionSocket.on('chat:message', async (data: { message: string }) => {
@@ -59,8 +61,15 @@ export function setupChatSocket(io: Server, ragChatAssistant: RagChatAssistant) 
             }
         });
 
-        sessionSocket.on('chat:get_history', () => {
-            sessionSocket.emit('chat:history', { history: session.chatHistory || [] });
+        sessionSocket.on('chat:get_history', async () => {
+            try {
+                const memory = ConversationMemory.getMemory(session.userId);
+                const { history } = await memory.loadMemoryVariables({});
+                sessionSocket.emit('chat:history', { history });
+            } catch (error) {
+                console.error('Error getting chat history:', error);
+                sessionSocket.emit('chat:error', { error: 'Failed to get chat history' });
+            }
         });
 
         sessionSocket.on('disconnect', () => {

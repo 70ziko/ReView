@@ -5,7 +5,6 @@ import { Session } from 'express-session';
 interface SessionIncomingMessage extends IncomingMessage {
     session: Session & {
         userId: string;
-        chatHistory: any[];
     };
 }
 
