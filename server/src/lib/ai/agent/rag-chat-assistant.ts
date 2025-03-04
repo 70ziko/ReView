@@ -23,6 +23,7 @@ export class RagChatAssistant {
   private embeddingsModel: OpenAIEmbeddings;
   private tools: GraphRagTools;
   private executor: AgentExecutor | null = null;
+  private memory: ConversationMemory | null = null;
 
   constructor() {
     this.llm = new ChatOpenAI(LLM_CONFIG);
@@ -38,8 +39,8 @@ export class RagChatAssistant {
 
   async initializeChat(userId: string, productData: any): Promise<void> {
     await this.clearHistory(userId);
-    const memory = ConversationMemory.getMemory(userId);
-    await memory.initializeWithProductContext(productData);
+    this.memory = ConversationMemory.getMemory(userId);
+    this.memory.initializeWithProductContext(productData);
   }
 
   async initialize(userId: string): Promise<void> {
