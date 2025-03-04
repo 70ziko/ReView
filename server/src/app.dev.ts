@@ -15,38 +15,29 @@ dotenv.config({ path: '../.env' });
 const app: Express = express();
 const httpServer = createServer(app);
 
-// Configure Socket.IO
 const io = configureSocketIO(httpServer, process.env.CORS_ORIGIN || '*');
 
-// Basic middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Session handling
 app.use(sessionMiddleware);
 
-// Make session available in Socket.IO
 io.use(wrapMiddleware(sessionMiddleware));
 
-// API routes with userId
 app.use('/api', ensureUserId, routes);
 
-// Setup Socket.IO chat handlers
 setupChatSocket(io, ragChatAssistant);
 
-// Root route
 app.get('/', (_req: Request, res: Response) => {
     res.send('ReView API Server is running');
 });
 
-// 404 handler
 app.use((_req: Request, res: Response) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
-// Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack);
     res.status(500).json({ error: 'Internal Server Error' });
