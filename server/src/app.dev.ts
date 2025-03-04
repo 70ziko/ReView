@@ -3,130 +3,40 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import { Server, Socket } from 'socket.io';
-import session from 'express-session';
-import { IncomingMessage } from 'http';
 import routes from './routes/index.js';
-import { RagChatAssistant } from './lib/ai/index.js';
 import { initializeDatabase } from './services/db/index.js';
+import { sessionMiddleware, ensureUserId } from './middleware/session.js';
+import { configureSocketIO, wrapMiddleware } from './socket/config.js';
+import { setupChatSocket } from './socket/chat.js';
+import { ragChatAssistant } from './lib/ai/index.js';
 
 dotenv.config({ path: '../.env' });
 
 const app: Express = express();
 const httpServer = createServer(app);
 
-const io = new Server(httpServer, {
-    cors: {
-        origin: process.env.CORS_ORIGIN || '*',
-        methods: ['GET', 'POST'],
-    },
-});
+// Configure Socket.IO
+const io = configureSocketIO(httpServer, process.env.CORS_ORIGIN || '*');
 
-declare module 'express-session' {
-  interface SessionData {
-    userId: string;
-  }
-}
-
-const sessionMiddleware = session({
-    secret: process.env.SESSION_SECRET || 'default_secret_key',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { 
-        secure: process.env.NODE_ENV === 'production', 
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-});
-
+// Basic middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); 
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
-app.use(sessionMiddleware);
-interface SessionIncomingMessage extends IncomingMessage {
-    session: any;
-}
 
-interface SessionSocket extends Socket {
-    request: SessionIncomingMessage;
-}
+// Session handling
+app.use(sessionMiddleware);
 
 // Make session available in Socket.IO
-const wrap = (middleware: any) => (socket: any, next: any) => middleware(socket.request, {}, next);
-io.use(wrap(sessionMiddleware));
+io.use(wrapMiddleware(sessionMiddleware));
 
-app.use('/api', (req, _res, next) => {
-    if (!req.session.userId) {
-      req.session.userId = Math.random().toString(36).substring(2, 15) + 
-                            Math.random().toString(36).substring(2, 15);
-    }
-    next();
-  }, routes);
+// API routes with userId
+app.use('/api', ensureUserId, routes);
 
-io.on('connection', (socket: Socket) => {
-    const sessionSocket = socket as SessionSocket;
-    const session = sessionSocket.request.session;
-    console.log(`Client connected: ${socket.id}`);
+// Setup Socket.IO chat handlers
+setupChatSocket(io, ragChatAssistant);
 
-    if (!session) {
-        sessionSocket.request.session = { chatHistory: [] };
-        sessionSocket.request.session.save();
-    }
-
-    sessionSocket.on('chat:message', async (data: { message: string }) => {
-        try {
-            session.save();
-            
-            await RagChatAssistant.processMessage(data.message, (chunk) => {
-                sessionSocket.emit('chat:response:chunk', { chunk });
-            });
-            
-            sessionSocket.emit('chat:response:done');
-        } catch (error) {
-            console.error('Error processing chat message:', error);
-            sessionSocket.emit('chat:error', { error: 'Failed to process your message' });
-        }
-    });
-
-    sessionSocket.on('chat:message:image', async (data: { message: string, imageData: string }) => {
-        try {
-            session.save();
-            
-            await RagChatAssistant.processMessageWithImage(
-                data.message,
-                data.imageData,
-                (chunk) => {
-                    sessionSocket.emit('chat:response:chunk', { chunk });
-                }
-            );
-            
-            sessionSocket.emit('chat:response:done');
-        } catch (error) {
-            console.error('Error processing chat message with image:', error);
-            sessionSocket.emit('chat:error', { error: 'Failed to process your message with image' });
-        }
-    });
-
-    sessionSocket.on('chat:clear', async () => {
-        try {
-            await RagChatAssistant.clearHistory();
-            session.save();
-            sessionSocket.emit('chat:cleared');
-        } catch (error) {
-            console.error('Error clearing chat history:', error);
-            sessionSocket.emit('chat:error', { error: 'Failed to clear chat history' });
-        }
-    });
-
-    sessionSocket.on('chat:get_history', () => {
-        sessionSocket.emit('chat:history', { history: session.chatHistory || [] });
-    });
-
-    sessionSocket.on('disconnect', () => {
-        console.log(`Client disconnected: ${socket.id}`);
-    });
-});
-
+// Root route
 app.get('/', (_req: Request, res: Response) => {
     res.send('ReView API Server is running');
 });
