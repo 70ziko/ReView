@@ -24,7 +24,7 @@ export class RagChatAssistant {
         this.tools = [
             ...createProductTools(toolDeps),
             ...createNetworkTools(toolDeps),
-            ...[createSearchTools(toolDeps)[1]], // Only use the google_lens tool
+            createSearchTools(toolDeps)[1], // Only use the google_lens tool
         ];
         
         this.memory = new ConversationMemory();
