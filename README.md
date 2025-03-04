@@ -38,28 +38,6 @@ The system follows a client-server architecture with the following components:
 - **Image Recognition**: Google Lens API
 - **TypeScript**: For type-safe code
 
-## Key Features
-
-- Product identification from images
-- Natural language query support
-- Review summarization
-- Alternative product suggestions
-- Price comparison
-- Conversation history management
-- Product graph network analysis
-
-## API Endpoints
-
-### Chat Endpoints
-
-- `POST /chat`: Process text messages
-- `POST /chat/image`: Process messages with images
-- `POST /chat/clear`: Clear chat history
-
-### Image Processing
-
-- `POST /image/process`: Process product images and return information
-
 ## Data Structure
 
 The system returns product information in the following JSON format:
@@ -115,45 +93,26 @@ The system uses several AI tools:
 1. **Product Search by Description**: Vector similarity search on product embeddings
 2. **Review Retrieval**: Gets the most helpful reviews for a product
 3. **Product Network Analysis**: Analyzes related products, popular items, and patterns
-4. **Simulated Internet Search**: Provides information not in the database
+4. **Internet Search**: Provides information not found in the database
 
 ## Development Setup
 
 1. Clone the repository
 2. Install dependencies with `npm install`
 3. Set up environment variables:
-   - `OPENAI_API_KEY`: For GPT and embeddings
-   - `ARANGO_URL`: ArangoDB connection URL
-   - `ARANGO_DB`: Database name
-   - `ARANGO_USERNAME`: Database username
-   - `ARANGO_DB_PASS`: Database password
-4. Run the server with `npm start`
-
-## Environment Variables
-
-```plaintext
-OPENAI_API_KEY=your_openai_api_key
-ARANGO_URL=https://your_arango_instance.arangodb.cloud:8529
-ARANGO_DB=_system
-ARANGO_USERNAME=root
-ARANGO_DB_PASS=your_password
-```
-
-## Future Enhancements
-
-- Improved image recognition
-- Real-time price tracking
-- User preference learning
-- Mobile app optimization
-- Integration with more e-commerce platforms
+   - `cp .env.template .env`
+   - Replace values with your own API keys
+4. Run the server with `npm run dev`
 
 ## License
 
-Proprietary and Confidential
+Proprietary Software
 
-This code and documentation are proprietary and confidential. All rights reserved.
+This code and documentation are proprietary.
 
-Any use, modification, or distribution of this software requires explicit written permission from the author(s). Developers must reach out directly to obtain permission before using or modifying any part of this codebase.
+Any use, modification, or distribution of this software requires explicit written permission from the author Patryk Fidler. Developers must reach out directly to obtain permission before using or modifying any part of this codebase.
+
+All rights otherwise reserved.
 
 ---
 
