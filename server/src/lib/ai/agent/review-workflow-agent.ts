@@ -2,7 +2,6 @@ import { ChatOpenAI } from '@langchain/openai';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { AgentExecutor, createOpenAIToolsAgent } from 'langchain/agents';
 import { ChatPromptTemplate, MessagesPlaceholder, SystemMessagePromptTemplate } from '@langchain/core/prompts';
-import { ConversationMemory } from '../memory/conversation-memory.js';
 import { createProductTools } from '../tools/product-tools.js';
 import { createNetworkTools } from '../tools/network-tools.js';
 import { createSearchTools } from '../tools/search-tools.js';
@@ -13,7 +12,6 @@ export class ReviewWorkflowAgent {
     private llm: ChatOpenAI;
     private embeddingsModel: OpenAIEmbeddings;
     private tools: GraphRagTools;
-    private memory: ConversationMemory;
     private executor: AgentExecutor | null = null;
     
     constructor() {
@@ -26,10 +24,6 @@ export class ReviewWorkflowAgent {
             ...createNetworkTools(toolDeps),
             ...[createSearchTools(toolDeps)[1]], // Only google_lens tool
         ];
-        
-        this.memory = new ConversationMemory();
-        this.memory.memoryKey = "history"; 
-        this.memory.returnMessages = true; 
     }
     
     async initialize(): Promise<void> {
@@ -39,7 +33,6 @@ export class ReviewWorkflowAgent {
 
         const prompt = ChatPromptTemplate.fromMessages([
             formattedSystemMessage,
-            new MessagesPlaceholder("history"), 
             ["user", "{input}"],
             new MessagesPlaceholder("agent_scratchpad"),
         ]);
@@ -53,7 +46,6 @@ export class ReviewWorkflowAgent {
         this.executor = AgentExecutor.fromAgentAndTools({
             agent,
             tools: this.tools,
-            memory: this.memory,
             ...AGENT_CONFIG
         });
     }
@@ -94,6 +86,7 @@ export class ReviewWorkflowAgent {
             return "Sorry, I encountered an error while processing your request.";
         }
     }
+
     /**
      * Process an image along with a message
      * @param message The user's message
@@ -139,12 +132,5 @@ export class ReviewWorkflowAgent {
             console.error("Error processing message with image:", error);
             return "Sorry, I encountered an error while processing your request.";
         }
-    }
-    
-    /**
-     * Clear the conversation history
-     */
-    async clearHistory(): Promise<void> {
-        if (this.memory) await this.memory.clear();
     }
 }

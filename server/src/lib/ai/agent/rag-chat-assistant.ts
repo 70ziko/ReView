@@ -13,7 +13,6 @@ export class RagChatAssistant {
     private llm: ChatOpenAI;
     private embeddingsModel: OpenAIEmbeddings;
     private tools: GraphRagTools;
-    private memory: ConversationMemory;
     private executor: AgentExecutor | null = null;
     
     constructor() {
@@ -26,13 +25,15 @@ export class RagChatAssistant {
             ...createNetworkTools(toolDeps),
             createSearchTools(toolDeps)[1], // Only use the google_lens tool
         ];
-        
-        this.memory = new ConversationMemory();
-        this.memory.memoryKey = "history"; 
-        this.memory.returnMessages = true; 
+    }
+
+    async initializeChat(userId: string, productData: any): Promise<void> {
+        await this.clearHistory(userId);
+        const memory = ConversationMemory.getMemory(userId);
+        await memory.initializeWithProductContext(productData);
     }
     
-    async initialize(): Promise<void> {
+    async initialize(userId: string): Promise<void> {
         if (this.executor) return;
         
         const formattedSystemMessage = SystemMessagePromptTemplate.fromTemplate(ASSISTANT_SYSTEM_MESSAGE);        
@@ -50,23 +51,26 @@ export class RagChatAssistant {
             prompt: prompt,
         });
         
+        const memory = ConversationMemory.getMemory(userId);
+        
         this.executor = AgentExecutor.fromAgentAndTools({
             agent,
             tools: this.tools,
-            memory: this.memory,
+            memory: memory,
             ...AGENT_CONFIG
         });
     }
     
     /**
      * Process a user message and return a response
+     * @param userId The user's unique identifier
      * @param message The user's message
      * @param callback Optional callback function for streaming responses
      */
-    async processMessage(message: string, callback?: (chunk: string) => void): Promise<string> {
+    async processMessage(userId: string, message: string, callback?: (chunk: string) => void): Promise<string> {
         try {
             if (!this.executor) {
-                await this.initialize();
+                await this.initialize(userId);
             }
             
             if (callback) {
@@ -94,20 +98,23 @@ export class RagChatAssistant {
             return "Sorry, I encountered an error while processing your request.";
         }
     }
+
     /**
      * Process an image along with a message
+     * @param userId The user's unique identifier
      * @param message The user's message
      * @param imageData URL or base64 data of the image
      * @param callback Optional callback function for streaming responses
      */
     async processMessageWithImage(
+        userId: string,
         message: string,
         imageData: string,
         callback?: (chunk: string) => void
     ): Promise<string> {
         try {
             if (!this.executor) {
-                await this.initialize();
+                await this.initialize(userId);
             }
 
             const input = {
@@ -142,9 +149,11 @@ export class RagChatAssistant {
     }
     
     /**
-     * Clear the conversation history
+     * Clear the conversation history for a specific user
+     * @param userId The user's unique identifier
      */
-    async clearHistory(): Promise<void> {
-        if (this.memory) await this.memory.clear();
+    async clearHistory(userId: string): Promise<void> {
+        ConversationMemory.clearMemory(userId);
+        this.executor = null; // Force re-initialization with new memory
     }
 }

@@ -1,16 +1,40 @@
 import { BaseChatMemory } from 'langchain/memory';
 import { ChatMessageHistory } from 'langchain/stores/message/in_memory';
+import { AIMessage } from '@langchain/core/messages';
 
 export class ConversationMemory implements BaseChatMemory {
+    private static memories = new Map<string, ConversationMemory>();
     chatHistory: ChatMessageHistory;
     returnMessages: boolean;
     inputKey?: string;
     outputKey?: string;
     memoryKey: string = "history";
     
-    constructor() {
+    private constructor() {
         this.chatHistory = new ChatMessageHistory();
         this.returnMessages = true;
+    }
+
+    static getMemory(userId: string): ConversationMemory {
+        if (!this.memories.has(userId)) {
+            this.memories.set(userId, new ConversationMemory());
+        }
+        return this.memories.get(userId)!;
+    }
+
+    static clearMemory(userId: string): void {
+        const memory = this.memories.get(userId);
+        if (memory) {
+            memory.clear();
+        }
+    }
+
+    async initializeWithProductContext(productData: any): Promise<void> {
+        await this.clear();
+        const contextMessage = new AIMessage({
+            content: JSON.stringify(productData)
+        });
+        await this.chatHistory.addMessage(contextMessage);
     }
     
     get memoryKeys(): string[] {

@@ -2,7 +2,7 @@ import { RagChatAssistant } from './agent/rag-chat-assistant.js';
 
 // Singleton instance
 export const ragChatAssistant = new RagChatAssistant();
-void ragChatAssistant.initialize();
+void ragChatAssistant.initialize('system'); // Use 'system' as default userId for initial setup
 
 export * from './tools/types.js';
 export * from './memory/conversation-memory.js';
