@@ -1,6 +1,7 @@
 import { describe, expect, test, jest, beforeEach } from '@jest/globals';
+import { uploadImage } from '../../../services/image-hosting/imgur.js';
 
-const mockUpload = jest.fn<() => Promise<{ success: boolean; data?: { link: string } }>>();
+const mockUpload = jest.fn<() => Promise<any>>();
 const mockImgurClient = jest.fn().mockImplementation(() => ({
   upload: mockUpload
 }));
@@ -14,17 +15,15 @@ jest.mock('fs/promises', () => ({
   readFile: mockReadFile
 }));
 
-import { uploadImage } from '../../../services/image-hosting/imgur.js';
-
 describe('Image Upload Service', () => {
-  const mockSuccessResponse = {
-    success: true,
-    data: { link: 'https://example.com/image.jpg' }
-  };
+  // const mockSuccessResponse = {
+  //   success: true,
+  //   data: { link: 'https://example.com/image.jpg' }
+  // };
 
-  const mockErrorResponse = {
-    success: false
-  };
+  // const mockErrorResponse = {
+  //   success: false
+  // };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -33,13 +32,14 @@ describe('Image Upload Service', () => {
   });
 
   test('should upload a base64 image successfully', async () => {
-    mockUpload.mockResolvedValueOnce(mockSuccessResponse);
+    const imgurResponse = { success: true, data: { link: 'https://example.com/image.jpg' } };
+    mockUpload.mockResolvedValueOnce(imgurResponse);
 
     const base64Data = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2Q==';
     const result = await uploadImage({ base64: base64Data });
 
     expect(mockUpload).toHaveBeenCalledWith({
-      image: '/9j/4AAQSkZJRgABAQEAYABgAAD/2Q==', // Data URL prefix should be removed
+      image: '/9j/4AAQSkZJRgABAQEAYABgAAD/2Q==',
       type: 'base64'
     });
     expect(result).toEqual({
@@ -50,8 +50,9 @@ describe('Image Upload Service', () => {
 
   test('should upload an image from file path successfully', async () => {
     const mockBuffer = Buffer.from('file-content');
+    const imgurResponse = { success: true, data: { link: 'https://example.com/image.jpg' } };
     mockReadFile.mockResolvedValueOnce(mockBuffer);
-    mockUpload.mockResolvedValueOnce(mockSuccessResponse);
+    mockUpload.mockResolvedValueOnce(imgurResponse);
 
     const result = await uploadImage({ filePath: '/path/to/image.jpg' });
 
@@ -67,7 +68,7 @@ describe('Image Upload Service', () => {
   });
 
   test('should handle upload failure', async () => {
-    mockUpload.mockResolvedValueOnce(mockErrorResponse);
+    mockUpload.mockResolvedValueOnce({ success: false });
 
     const result = await uploadImage({ base64: 'invalid-data' });
 

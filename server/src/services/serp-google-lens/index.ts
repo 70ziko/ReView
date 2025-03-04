@@ -1,5 +1,5 @@
 import { getJson } from "serpapi";
-import uploadImage, { ImageUploadOptions } from "../image-hosting";
+import uploadImage from "../image-hosting";
 
 export type GoogleLensInput = {
   url?: string;
