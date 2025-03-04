@@ -1,74 +1,6 @@
-import express, { Request, Response, RequestHandler } from "express";
-import { ragChatAssistant } from "../lib/ai/index.js";
-import { RequestWithSession, ProductResponse } from "./types.js";
-
-const router = express.Router();
-
-// Basic routes
-router.get("/", ((_req: Request, res: Response) => {
-  res.send("Hello, World!");
-}) as RequestHandler);
-
-router.get("/health", ((_req: Request, res: Response) => {
-  res.status(200).json({ status: "OK" });
-}) as RequestHandler);
-
-// Chat routes
-const chatHandler: RequestHandler = async (req, res) => {
-  const request = req as RequestWithSession;
-  try {
-    const { message } = request.body;
-
-    if (!message) {
-      res.status(400).json({ error: "Message is required" });
-      return;
-    }
-
-    const response = await ragChatAssistant.processMessage(request.session.userId, message);
-    res.json({ response });
-  } catch (error) {
-    console.error("Error processing chat message:", error);
-    res.status(500).json({ error: "Failed to process message" });
-  }
-};
-
-const chatImageHandler: RequestHandler = async (req, res) => {
-  const request = req as RequestWithSession;
-  try {
-    const { message, imageData } = request.body;
-
-    if (!message) {
-      res.status(400).json({ error: "Message is required" });
-      return;
-    }
-    if (!imageData) {
-      res.status(400).json({ error: "Image data is required" });
-      return;
-    }
-
-    const response = await ragChatAssistant.processMessageWithImage(
-      request.session.userId,
-      message,
-      imageData
-    );
-
-    res.json({ response });
-  } catch (error) {
-    console.error("Error processing image chat message:", error);
-    res.status(500).json({ error: "Failed to process message with image" });
-  }
-};
-
-const chatClearHandler: RequestHandler = async (req, res) => {
-  const request = req as RequestWithSession;
-  try {
-    await ragChatAssistant.clearHistory(request.session.userId);
-    res.json({ status: "success", message: "Chat history cleared" });
-  } catch (error) {
-    console.error("Error clearing chat history:", error);
-    res.status(500).json({ error: "Failed to clear chat history" });
-  }
-};
+import { RequestHandler } from "express";
+import { ProductResponse, RequestWithSession } from "../routes/types";
+import { ragChatAssistant } from "../../lib/ai";
 
 // Product review routes
 const imageProcessHandler: RequestHandler = async (req, res) => {
@@ -80,7 +12,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       res.status(400).json({ error: "Image data is required" });
       return;
     }
-    
+
     await ragChatAssistant.clearHistory(request.session.userId);
 
     // In a real implementation, this would process the image
@@ -112,7 +44,10 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       category: "Electronics/Audio/Headphones",
     };
 
-    await ragChatAssistant.initializeChat(request.session.userId, dummyResponse);
+    await ragChatAssistant.initializeChat(
+      request.session.userId,
+      dummyResponse
+    );
     res.json(dummyResponse);
   } catch (error) {
     console.error("Error processing image:", error);
@@ -159,7 +94,10 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
       category: "Electronics/SmartHome/Security",
     };
 
-    await ragChatAssistant.initializeChat(request.session.userId, dummyResponse);
+    await ragChatAssistant.initializeChat(
+      request.session.userId,
+      dummyResponse
+    );
     res.json(dummyResponse);
   } catch (error) {
     console.error("Error processing prompt:", error);
@@ -167,11 +105,4 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
-// Route handlers
-router.post("/chat", chatHandler);
-router.post("/chat/image", chatImageHandler);
-router.post("/chat/clear", chatClearHandler);
-router.post("/image/process", imageProcessHandler);
-router.post("/prompt/process", promptProcessHandler);
-
-export default router;
+export { imageProcessHandler, promptProcessHandler };

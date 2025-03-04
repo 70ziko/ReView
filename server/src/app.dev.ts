@@ -3,7 +3,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import routes from './routes/index.js';
+import routes from './api/routes/index.js';
 import { initializeDatabase } from './services/db/index.js';
 import { sessionMiddleware, ensureUserId } from './middleware/session.js';
 import { configureSocketIO, wrapMiddleware } from './socket/config.js';

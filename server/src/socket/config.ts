@@ -12,7 +12,6 @@ export function configureSocketIO(httpServer: HttpServer, corsOrigin: string): S
     });
 }
 
-// Create a mock response object for socket middleware
 const createMockResponse = (): Response => {
     const res = {} as Response;
     res.clearCookie = () => res;
@@ -24,7 +23,6 @@ const createMockResponse = (): Response => {
     return res;
 };
 
-// Make session available in Socket.IO with proper types
 export const wrapMiddleware = (middleware: RequestHandler) => (socket: any, next: any) => {
     middleware(socket.request as Request, createMockResponse(), next);
 };
