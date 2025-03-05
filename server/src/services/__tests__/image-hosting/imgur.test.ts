@@ -7,13 +7,13 @@ const mockImgurClient = jest.fn().mockImplementation(() => ({
 }));
 const mockReadFile = jest.fn<() => Promise<Buffer>>();
 
-jest.mock('imgur', () => ({
-  ImgurClient: mockImgurClient
-}));
+// jest.mock('imgur', () => ({
+//   ImgurClient: mockImgurClient
+// }));
 
-jest.mock('fs/promises', () => ({
-  readFile: mockReadFile
-}));
+// jest.mock('fs/promises', () => ({
+//   readFile: mockReadFile
+// }));
 
 describe('Image Upload Service', () => {
   // const mockSuccessResponse = {

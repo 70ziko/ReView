@@ -18,7 +18,7 @@ jest.mock('../../../services/image-hosting/imgur.js', () => ({
   uploadImage: mockImgurUploadImage
 }));
 
-import uploadImage from '../../../services/image-hosting/index.js';
+import uploadImage from '../../image-hosting/index.js';
 
 describe('Image Hosting Service Index', () => {
   beforeEach(() => {
