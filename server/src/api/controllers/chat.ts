@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { RequestWithSession } from "../routes/types";
-import { ragChatAssistant } from "../../lib/ai";
+import { chatProductAssistant } from "../../lib/ai";
 
 const chatHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
@@ -12,7 +12,7 @@ const chatHandler: RequestHandler = async (req, res) => {
       return;
     }
 
-    const response = await ragChatAssistant.processMessage(
+    const response = await chatProductAssistant.processMessage(
       request.session.userId,
       message
     );
@@ -37,7 +37,7 @@ const chatImageHandler: RequestHandler = async (req, res) => {
       return;
     }
 
-    const response = await ragChatAssistant.processMessageWithImage(
+    const response = await chatProductAssistant.processMessageWithImage(
       request.session.userId,
       message,
       imageData
@@ -53,7 +53,7 @@ const chatImageHandler: RequestHandler = async (req, res) => {
 const chatClearHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
-    await ragChatAssistant.clearHistory(request.session.userId);
+    await chatProductAssistant.clearHistory(request.session.userId);
     res.json({ status: "success", message: "Chat history cleared" });
   } catch (error) {
     console.error("Error clearing chat history:", error);

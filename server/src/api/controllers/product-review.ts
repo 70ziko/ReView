@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { ProductResponse, RequestWithSession } from "../routes/types";
-import { ragChatAssistant, graphRagAgent } from "../../lib/ai";
+import { chatProductAssistant, productCardAgent } from "../../lib/ai";
 import serpGoogleLens from "../../services/serp-google-lens";
 import { parseGoogleLensInput } from "../../lib/parsers/image-data";
 
@@ -14,7 +14,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       return;
     }
 
-    await ragChatAssistant.clearHistory(request.session.userId);
+    await chatProductAssistant.clearHistory(request.session.userId);
 
     // In a real implementation, this would process the image
     // Here we're returning dummy data
@@ -45,7 +45,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       category: "Electronics/Audio/Headphones",
     };
 
-    await ragChatAssistant.initializeChat(
+    await chatProductAssistant.initializeChat(
       request.session.userId,
       dummyResponse
     );
@@ -66,12 +66,12 @@ const agentImageProcessHandler: RequestHandler = async (req, res) => {
       return;
     }
 
-    await ragChatAssistant.clearHistory(request.session.userId);
+    await chatProductAssistant.clearHistory(request.session.userId);
     
     const parsedImageData = parseGoogleLensInput(imageData); 
     const imageResponse = await serpGoogleLens(parsedImageData);
 
-    const productData = await graphRagAgent.processMessageWithImage(
+    const productData = await productCardAgent.processMessageWithImage(
       `Present the data from the google lens api into a product card json with a public 
       consensus on the review, prices, and present alternatives. 
       Use the tools you have available to get the information from the databas. Google lens response:
@@ -79,7 +79,7 @@ const agentImageProcessHandler: RequestHandler = async (req, res) => {
       imageData
     );
 
-    await ragChatAssistant.initializeChat(
+    await chatProductAssistant.initializeChat(
       request.session.userId,
       productData
     );
@@ -102,7 +102,7 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
       return;
     }
 
-    await ragChatAssistant.clearHistory(request.session.userId);
+    await chatProductAssistant.clearHistory(request.session.userId);
 
     const dummyResponse: ProductResponse = {
       product_name: "Smart Home Security Camera",
@@ -131,7 +131,7 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
       category: "Electronics/SmartHome/Security",
     };
 
-    await ragChatAssistant.initializeChat(
+    await chatProductAssistant.initializeChat(
       request.session.userId,
       dummyResponse
     );

@@ -17,7 +17,7 @@ import {
 } from "./constants.js";
 import { LangTools } from "../tools/types.js";
 
-export class GraphRagAgent {
+export class ProductCardAgent {
   private llm: ChatOpenAI;
   private embeddingsModel: OpenAIEmbeddings;
   private tools: LangTools;

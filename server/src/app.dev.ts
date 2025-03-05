@@ -8,7 +8,7 @@ import routes from "./api/routes/index.js";
 import { sessionMiddleware, ensureUserId } from "./middleware/session.js";
 import { configureSocketIO, wrapMiddleware } from "./socket/config.js";
 import { setupChatSocket } from "./socket/chat.js";
-import { ragChatAssistant } from "./lib/ai/index.js";
+import { chatProductAssistant } from "./lib/ai/index.js";
 
 dotenv.config({ path: "../.env" });
 
@@ -28,7 +28,7 @@ io.use(wrapMiddleware(sessionMiddleware));
 
 app.use("/api", ensureUserId, routes);
 
-setupChatSocket(io, ragChatAssistant);
+setupChatSocket(io, chatProductAssistant);
 
 app.get("/", (_req: Request, res: Response) => {
   res.send("ReView API Server is running");

@@ -1,11 +1,11 @@
 import { Server, Socket } from "socket.io";
-import { RagChatAssistant } from "../lib/ai/index.js";
+import { ChatProductAssistant } from "../lib/ai/index.js";
 import { SessionSocket } from "./types.js";
 import { ConversationMemory } from "../lib/ai/memory/conversation-memory.js";
 
 export function setupChatSocket(
   io: Server,
-  ragChatAssistant: RagChatAssistant
+  chatProductAssistant: ChatProductAssistant
 ) {
   io.on("connection", (socket: Socket) => {
     const sessionSocket = socket as SessionSocket;
@@ -23,7 +23,7 @@ export function setupChatSocket(
       try {
         session.save();
 
-        await ragChatAssistant.processMessage(
+        await chatProductAssistant.processMessage(
           session.userId,
           data.message,
           (chunk) => {
@@ -46,7 +46,7 @@ export function setupChatSocket(
         try {
           session.save();
 
-          await ragChatAssistant.processMessageWithImage(
+          await chatProductAssistant.processMessageWithImage(
             session.userId,
             data.message,
             data.imageData,
@@ -67,7 +67,7 @@ export function setupChatSocket(
 
     sessionSocket.on("chat:clear", async () => {
       try {
-        await ragChatAssistant.clearHistory(session.userId);
+        await chatProductAssistant.clearHistory(session.userId);
         session.save();
         sessionSocket.emit("chat:cleared");
       } catch (error) {
