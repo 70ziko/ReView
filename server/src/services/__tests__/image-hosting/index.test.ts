@@ -1,5 +1,16 @@
 import { describe, expect, test, jest, beforeEach } from '@jest/globals';
-import { ImageUploadOptions, ImageUploadResult } from '../../../services/image-hosting/types.js';
+// import { ImageUploadOptions, ImageUploadResult } from '../../../services/image-hosting/types.js';
+
+interface ImageUploadOptions {
+  base64?: string;
+  filePath?: string;
+}
+
+interface ImageUploadResult {
+  success: boolean;
+  url: string;
+  error?: string;
+}
 
 const mockImgurUploadImage = jest.fn<() => Promise<ImageUploadResult>>();
 

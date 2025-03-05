@@ -1,5 +1,5 @@
 import { describe, expect, test, jest, beforeEach } from '@jest/globals';
-import { uploadImage } from '../../../services/image-hosting/imgur.js';
+import { uploadImage } from '../../../services/image-hosting/imgur';
 
 const mockUpload = jest.fn<() => Promise<any>>();
 const mockImgurClient = jest.fn().mockImplementation(() => ({
