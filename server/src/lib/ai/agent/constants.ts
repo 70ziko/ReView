@@ -12,7 +12,7 @@ export const EMBEDDINGS_CONFIG = {
 export const AGENT_CONFIG = {
   returnIntermediateSteps: false,
   maxIterations: 5,
-  verbose: true,
+  // verbose: true,
 } as const;
 
 export const WORKFLOW_SYSTEM_MESSAGE = `You are Review Getter, a workflow agent. You will receive a json object with results from the google lens API and based on the results you will conduct research across the graphRAG database to provide the user with relevant information. Use available tools to lookup information in the database and only if not found search the internet for it. The returned information should be in a json format according to the structure.`;

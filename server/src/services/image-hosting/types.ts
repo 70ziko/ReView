@@ -7,4 +7,5 @@ export interface ImageUploadResult {
   success: boolean;
   url: string;
   error?: string;
+  warning?: string;
 }
