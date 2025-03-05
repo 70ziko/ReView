@@ -4,11 +4,11 @@ import {
   sanitizeKey,
   db,
 } from "../../../services/db/index.js";
-import { GraphRagTools, ToolDependencies } from "./types.js";
+import { LangTools, ToolDependencies } from "./types.js";
 
 export function createNetworkTools(
   _dependencies: ToolDependencies
-): GraphRagTools {
+): LangTools {
   return [
     new DynamicTool({
       name: "analyze_product_network",

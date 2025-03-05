@@ -15,12 +15,12 @@ import {
   LLM_CONFIG,
   ASSISTANT_SYSTEM_MESSAGE,
 } from "./constants.js";
-import { GraphRagTools } from "../tools/types.js";
+import { LangTools } from "../tools/types.js";
 
 export class ReviewWorkflowAgent {
   private llm: ChatOpenAI;
   private embeddingsModel: OpenAIEmbeddings;
-  private tools: GraphRagTools;
+  private tools: LangTools;
   private executor: AgentExecutor | null = null;
 
   constructor() {

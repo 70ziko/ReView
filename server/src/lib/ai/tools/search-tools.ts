@@ -1,11 +1,11 @@
 import { DynamicTool } from "langchain/tools";
-import { GraphRagTools, ToolDependencies } from "./types.js";
+import { LangTools, ToolDependencies } from "./types.js";
 
 import serpGoogleLens, { GoogleLensInput } from "../../../services/serp-google-lens/index.js";
 
 export function createSearchTools(
   _dependencies: ToolDependencies
-): GraphRagTools {
+): LangTools {
   return [
     new DynamicTool({
       name: "search_internet",

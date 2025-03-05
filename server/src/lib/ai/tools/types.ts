@@ -6,7 +6,7 @@ import {
 import { OpenAIEmbeddings } from "@langchain/openai";
 
 export type GraphRagTool = DynamicTool | StructuredTool | DynamicStructuredTool;
-export type GraphRagTools = GraphRagTool[];
+export type LangTools = GraphRagTool[];
 
 export interface ToolDependencies {
   embeddingsModel: OpenAIEmbeddings;

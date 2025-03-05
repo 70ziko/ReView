@@ -1,10 +1,10 @@
 import { DynamicTool } from "langchain/tools";
 import { executeAqlQuery, sanitizeKey } from "../../../services/db/index.js";
-import { GraphRagTools, ToolDependencies } from "./types.js";
+import { LangTools, ToolDependencies } from "./types.js";
 
 export function createProductTools({
   embeddingsModel,
-}: ToolDependencies): GraphRagTools {
+}: ToolDependencies): LangTools {
   return [
     new DynamicTool({
       name: "get_product_by_description",
