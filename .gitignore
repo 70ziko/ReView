@@ -1,6 +1,9 @@
 # MacOs
 .DS_Store
 
+# Webstorm
+.idea/
+
 # Python
 __pycache__
 *.pyc
