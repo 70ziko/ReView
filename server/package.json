@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@langchain/openai": "^0.4.4",
+    "@types/multer": "^1.4.12",
     "@types/ws": "^8.5.14",
     "arangojs": "^10.1.1",
     "cors": "^2.8.5",
@@ -39,6 +40,7 @@
     "langchain": "^0.3.19",
     "langsmith": "^0.3.11",
     "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
     "openai": "^4.86.1",
     "serpapi": "^2.1.0",
     "socket.io": "^4.8.1",

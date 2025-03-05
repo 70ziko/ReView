@@ -7,7 +7,16 @@ import { parseGoogleLensInput } from "../../lib/parsers/image-data";
 const imageProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
-    const { imageData } = request.body;
+    // Handle form data upload
+    let imageData;
+    
+    if (request.file) {
+      imageData = request.file.buffer.toString('base64');
+    } else if (request.files && Array.isArray(request.files) && request.files.length > 0) {
+      imageData = request.files[0].buffer.toString('base64');
+    } else if (request.body && request.body.imageData) {
+      imageData = request.body.imageData;
+    }
 
     if (!imageData) {
       res.status(400).json({ error: "Image data is required" });
@@ -91,7 +100,6 @@ const agentImageProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
-
 const promptProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
@@ -142,4 +150,43 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
-export { imageProcessHandler, promptProcessHandler, agentImageProcessHandler };
+const productCardTestHandler: RequestHandler = async (req, res) => {
+  try {
+    const { message, imageData } = req.body;
+
+    if (!message) {
+      res.status(400).json({ error: "Message is required in request body" });
+      return;
+    }
+
+    let response;
+    if (imageData) {
+      response = await productCardAgent.processMessageWithImage(message, imageData);
+    } else {
+      response = await productCardAgent.processMessage(message);
+    }
+
+    const parsedResponse = JSON.parse(response);
+    res.json(parsedResponse);
+  } catch (error) {
+    console.error("Error processing product card request:", error);
+    res.status(500).json({
+      product_name: "Error",
+      score: 0,
+      image_url: "",
+      general_review: "Failed to process the request",
+      amazon_reviews_ref: [],
+      alternatives: [],
+      prices: { min: 0, avg: 0 },
+      product_id: "",
+      category: "error"
+    });
+  }
+};
+
+export {
+  imageProcessHandler,
+  promptProcessHandler,
+  agentImageProcessHandler,
+  productCardTestHandler
+};

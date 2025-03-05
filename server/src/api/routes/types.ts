@@ -7,6 +7,8 @@ export interface CustomSession extends Session {
 
 export interface RequestWithSession extends Request {
   session: CustomSession;
+  file?: Express.Multer.File;
+  files?: Express.Multer.File[] | {[fieldname: string]: Express.Multer.File[]};
 }
 
 // Type for product response
