@@ -24,6 +24,7 @@ async function uploadToImgur(imageData: string | Buffer): Promise<ImageUploadRes
     }
     
     formData.append('title', 'Uploaded Image');
+    // formData.append('description', 'Uploaded temprory Image to get public URL');
     
     const response = await fetch(IMGUR_API_URL, {
       method: 'POST',

@@ -4,7 +4,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import routes from "./api/routes/index.js";
-import { initializeDatabase } from "./services/db/index.js";
+// import { initializeDatabase } from "./services/db/index.js";
 import { sessionMiddleware, ensureUserId } from "./middleware/session.js";
 import { configureSocketIO, wrapMiddleware } from "./socket/config.js";
 import { setupChatSocket } from "./socket/chat.js";
@@ -47,7 +47,7 @@ const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {
-    await initializeDatabase();
+    // await initializeDatabase();
 
     httpServer.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

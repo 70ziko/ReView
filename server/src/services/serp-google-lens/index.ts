@@ -16,7 +16,7 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
         filePath: input.filePath,
       });
 
-      console.log(uploadResult);
+      console.log("[serpGoogleLens] upload to imgur result: ", uploadResult);
 
       if (!uploadResult.success) {
         throw new Error(`Failed to upload image: ${uploadResult.error}`);

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npx tsx --env-file=../.env --watch  src/app.dev.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "node dist/app.dev.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "format": "prettier --log-level warn --write './**/*.{js,ts,jsx,tsx}'"
   },
@@ -64,6 +64,5 @@
       "jsx",
       "json"
     ]
-  },
-  "type": "module"
+  }
 }
