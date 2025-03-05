@@ -1,5 +1,5 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { OpenAIEmbeddings } from "@langchain/openai";
+// import { OpenAIEmbeddings } from "@langchain/openai";
 import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
 import { ResponseFormatter } from "./response-formatter.js";
 import {
@@ -12,7 +12,7 @@ import {
 // import { createSearchTools } from "../tools/search-tools.js";
 import {
   AGENT_CONFIG,
-  EMBEDDINGS_CONFIG,
+  // EMBEDDINGS_CONFIG,
   LLM_CONFIG,
   ASSISTANT_SYSTEM_MESSAGE,
 } from "./constants.js";
@@ -21,7 +21,7 @@ import { LangTools } from "../tools/types.js";
 export class ProductCardAgent {
   private baseLlm: ChatOpenAI;
   private structuredLlm: any; // Using any temporarily to avoid type issues
-  private embeddingsModel: OpenAIEmbeddings;
+  // private embeddingsModel: OpenAIEmbeddings;
   private tools: LangTools;
   private executor: AgentExecutor | null = null;
 
@@ -35,7 +35,7 @@ export class ProductCardAgent {
     this.structuredLlm = this.baseLlm.withStructuredOutput(ResponseFormatter, {
       name: "research_format_product_card"
     });
-    this.embeddingsModel = new OpenAIEmbeddings(EMBEDDINGS_CONFIG);
+    // this.embeddingsModel = new OpenAIEmbeddings(EMBEDDINGS_CONFIG);
 
     // const toolDeps = { embeddingsModel: this.embeddingsModel };
     this.tools = [
