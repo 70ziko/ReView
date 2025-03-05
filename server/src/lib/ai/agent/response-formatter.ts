@@ -17,10 +17,10 @@ export const PriceRange = z.object({
 export const ResponseFormatter = z.object({
   product_name: z.string().describe("The product name"),
   score: z.number().describe("The average rating of the product"),
-  image_url: z.string().url().describe("URL to the product image"),
+  image_url: z.string().describe("URL to the product image"),
   general_review: z.string().describe("General review of the product"),
   amazon_reviews_ref: z
-    .array(z.string().url())
+    .array(z.string())
     .describe("URL to Amazon reviews for the product"),
   alternatives: z
     .array(AlternativeProduct)

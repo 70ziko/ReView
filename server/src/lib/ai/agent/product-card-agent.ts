@@ -1,14 +1,15 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
+import { ResponseFormatter } from "./response-formatter.js";
 import {
   ChatPromptTemplate,
   MessagesPlaceholder,
   SystemMessagePromptTemplate,
 } from "@langchain/core/prompts";
-import { createProductTools } from "../tools/product-tools.js";
-import { createNetworkTools } from "../tools/network-tools.js";
-import { createSearchTools } from "../tools/search-tools.js";
+// import { createProductTools } from "../tools/product-tools.js";
+// import { createNetworkTools } from "../tools/network-tools.js";
+// import { createSearchTools } from "../tools/search-tools.js";
 import {
   AGENT_CONFIG,
   EMBEDDINGS_CONFIG,
@@ -18,20 +19,29 @@ import {
 import { LangTools } from "../tools/types.js";
 
 export class ProductCardAgent {
-  private llm: ChatOpenAI;
+  private baseLlm: ChatOpenAI;
+  private structuredLlm: any; // Using any temporarily to avoid type issues
   private embeddingsModel: OpenAIEmbeddings;
   private tools: LangTools;
   private executor: AgentExecutor | null = null;
 
   constructor() {
-    this.llm = new ChatOpenAI(LLM_CONFIG);
+    this.baseLlm = new ChatOpenAI({
+      ...LLM_CONFIG,
+      // modelName: "gpt-4-1106-preview",
+      temperature: 0,
+    });
+
+    this.structuredLlm = this.baseLlm.withStructuredOutput(ResponseFormatter, {
+      name: "research_format_product_card"
+    });
     this.embeddingsModel = new OpenAIEmbeddings(EMBEDDINGS_CONFIG);
 
-    const toolDeps = { embeddingsModel: this.embeddingsModel };
+    // const toolDeps = { embeddingsModel: this.embeddingsModel };
     this.tools = [
-      ...createProductTools(toolDeps),
-      ...createNetworkTools(toolDeps),
-      createSearchTools(toolDeps)[1], // Only use the google_lens tool
+      // ...createProductTools(toolDeps),
+      // ...createNetworkTools(toolDeps),
+      // createSearchTools(toolDeps)[1], // Only use the google_lens tool
     ];
   }
 
@@ -49,7 +59,7 @@ export class ProductCardAgent {
     ]);
 
     const agent = await createOpenAIToolsAgent({
-      llm: this.llm,
+      llm: this.structuredLlm,
       tools: this.tools,
       prompt: prompt,
     });
@@ -75,29 +85,52 @@ export class ProductCardAgent {
         await this.initialize();
       }
 
+      let result;
       if (callback) {
         // Streaming mode
-        const result = await this.executor!.invoke(
+        let streamedResponse = "";
+        result = await this.executor!.invoke(
           { input: message },
           {
             callbacks: [
               {
                 handleLLMNewToken(chunk: string) {
+                  streamedResponse += chunk;
                   callback(chunk);
                 },
               },
             ],
           }
         );
-        return result.output;
+
+        // Validate final streamed response
+        try {
+          return streamedResponse;
+        } catch (e) {
+          console.error("Streamed response validation failed:", e);
+          // If streaming response is invalid, fall back to the final result
+          return result.output;
+        }
       } else {
         // Non-streaming mode
-        const result = await this.executor!.invoke({ input: message });
+        result = await this.executor!.invoke({ input: message });
         return result.output;
       }
     } catch (error) {
       console.error("Error processing message:", error);
-      return "Sorry, I encountered an error while processing your request.";
+      // Return a properly formatted error response
+      return JSON.stringify({
+        product_name: "Error",
+        score: 0,
+        image_url: "",
+        general_review:
+          "Sorry, I encountered an error while processing your request.",
+        amazon_reviews_ref: [],
+        alternatives: [],
+        prices: { min: 0, avg: 0 },
+        product_id: "",
+        category: "error",
+      });
     }
   }
   /**
@@ -121,26 +154,49 @@ export class ProductCardAgent {
         image: imageData, // image URL or base64 string
       };
 
+      let result;
       if (callback) {
         // Streaming mode
-        const result = await this.executor!.invoke(input, {
+        let streamedResponse = "";
+        result = await this.executor!.invoke(input, {
           callbacks: [
             {
               handleLLMNewToken(token: string) {
+                streamedResponse += token;
                 callback(token);
               },
             },
           ],
         });
-        return result.output;
+
+        // Validate final streamed response
+        try {
+          return streamedResponse;
+        } catch (e) {
+          console.error("Streamed response validation failed:", e);
+          // If streaming response is invalid, fall back to the final result
+          return result.output;
+        }
       } else {
         // Non-streaming mode
-        const result = await this.executor!.invoke(input);
+        result = await this.executor!.invoke(input);
         return result.output;
       }
     } catch (error) {
       console.error("Error processing message with image:", error);
-      return "Sorry, I encountered an error while processing your request.";
+      // Return a properly formatted error response
+      return JSON.stringify({
+        product_name: "Error",
+        score: 0,
+        image_url: "",
+        general_review:
+          "Sorry, I encountered an error while processing your request with the provided image.",
+        amazon_reviews_ref: [],
+        alternatives: [],
+        prices: { min: 0, avg: 0 },
+        product_id: "",
+        category: "error",
+      });
     }
   }
 }
