@@ -1,11 +1,7 @@
 import { getJson } from "serpapi";
 import uploadImage from "../image-hosting";
-
-export type GoogleLensInput = {
-  url?: string;
-  base64?: string;
-  filePath?: string;
-};
+import { GoogleLensInput } from "./types";
+export * from "./types";
 
 export default async function serpGoogleLens(input: GoogleLensInput) {
   try {
@@ -19,6 +15,8 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
         base64: input.base64,
         filePath: input.filePath,
       });
+
+      console.log(uploadResult);
 
       if (!uploadResult.success) {
         throw new Error(`Failed to upload image: ${uploadResult.error}`);

@@ -5,6 +5,7 @@ import {
   chatClearHandler,
 } from "../controllers/chat.js";
 import {
+  agentImageProcessHandler,
   imageProcessHandler,
   promptProcessHandler,
 } from "../controllers/product-review.js";
@@ -16,5 +17,8 @@ router.post("/chat/image", chatImageHandler);
 router.post("/chat/clear", chatClearHandler);
 router.post("/image/process", imageProcessHandler);
 router.post("/prompt/process", promptProcessHandler);
+
+
+router.post("/agent/image/process", agentImageProcessHandler);
 
 export default router;

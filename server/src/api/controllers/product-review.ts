@@ -1,8 +1,9 @@
 import { RequestHandler } from "express";
 import { ProductResponse, RequestWithSession } from "../routes/types";
-import { ragChatAssistant } from "../../lib/ai";
+import { ragChatAssistant, graphRagAgent } from "../../lib/ai";
+import serpGoogleLens from "../../services/serp-google-lens";
+import { parseGoogleLensInput } from "../../lib/parsers/image-data";
 
-// Product review routes
 const imageProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
@@ -55,6 +56,42 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
+const agentImageProcessHandler: RequestHandler = async (req, res) => {
+  const request = req as RequestWithSession;
+  try {
+    const { imageData } = request.body;
+
+    if (!imageData) {
+      res.status(400).json({ error: "Image data is required" });
+      return;
+    }
+
+    await ragChatAssistant.clearHistory(request.session.userId);
+    
+    const parsedImageData = parseGoogleLensInput(imageData); 
+    const imageResponse = await serpGoogleLens(parsedImageData);
+
+    const productData = await graphRagAgent.processMessageWithImage(
+      `Present the data from the google lens api into a product card json with a public 
+      consensus on the review, prices, and present alternatives. 
+      Use the tools you have available to get the information from the databas. Google lens response:
+      \n${JSON.stringify(imageResponse)}`,
+      imageData
+    );
+
+    await ragChatAssistant.initializeChat(
+      request.session.userId,
+      productData
+    );
+
+    res.json(productData);
+  } catch (error) {
+    console.error("Error processing image:", error);
+    res.status(500).json({ error: "Failed to process image" });
+  }
+};
+
+
 const promptProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
@@ -105,4 +142,4 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
-export { imageProcessHandler, promptProcessHandler };
+export { imageProcessHandler, promptProcessHandler, agentImageProcessHandler };
