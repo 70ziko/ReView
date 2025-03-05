@@ -16,8 +16,6 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
         filePath: input.filePath,
       });
 
-      console.log("[serpGoogleLens] upload to imgur result: ", uploadResult);
-
       if (!uploadResult.success) {
         throw new Error(`Failed to upload image: ${uploadResult.error}`);
       }
@@ -30,6 +28,8 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
       url: imageUrl,
       api_key: process.env.SERPAPI_KEY,
     });
+
+    console.log(result);
 
     return result;
   } catch (error) {
