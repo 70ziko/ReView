@@ -6,8 +6,8 @@ import {
   MessagesPlaceholder,
   SystemMessagePromptTemplate,
 } from "@langchain/core/prompts";
-import { createProductTools } from "../tools/product-tools.js";
-import { createNetworkTools } from "../tools/network-tools.js";
+import { createRagTools } from "../tools/rag-tools.js";
+import { createGraphTools } from "../tools/graph-tools.js";
 import { createSearchTools } from "../tools/search-tools.js";
 import {
   AGENT_CONFIG,
@@ -29,8 +29,8 @@ export class ReviewWorkflowAgent {
 
     const toolDeps = { embeddingsModel: this.embeddingsModel };
     this.tools = [
-      ...createProductTools(toolDeps),
-      ...createNetworkTools(toolDeps),
+      ...createRagTools(toolDeps),
+      ...createGraphTools(toolDeps),
       createSearchTools(toolDeps)[1], // Only google_lens tool
     ];
   }

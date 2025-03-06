@@ -2,7 +2,7 @@ import { DynamicTool } from "langchain/tools";
 import { executeAqlQuery, sanitizeKey } from "../../../services/db/index.js";
 import { LangTools, ToolDependencies } from "./types.js";
 
-export function createProductTools({
+export function createRagTools({
   embeddingsModel,
 }: ToolDependencies): LangTools {
   return [

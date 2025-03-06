@@ -6,7 +6,7 @@ import {
 } from "../../../services/db/index.js";
 import { LangTools, ToolDependencies } from "./types.js";
 
-export function createNetworkTools(
+export function createGraphTools(
   _dependencies: ToolDependencies
 ): LangTools {
   return [

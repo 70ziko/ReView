@@ -7,8 +7,8 @@ import {
   SystemMessagePromptTemplate,
 } from "@langchain/core/prompts";
 import { ConversationMemory } from "../memory/conversation-memory.js";
-import { createProductTools } from "../tools/product-tools.js";
-import { createNetworkTools } from "../tools/network-tools.js";
+import { createRagTools } from "../tools/rag-tools.js";
+import { createGraphTools } from "../tools/graph-tools.js";
 import { createSearchTools } from "../tools/search-tools.js";
 import {
   AGENT_CONFIG,
@@ -31,8 +31,8 @@ export class ChatProductAssistant {
 
     const toolDeps = { embeddingsModel: this.embeddingsModel };
     this.tools = [
-      ...createProductTools(toolDeps),
-      ...createNetworkTools(toolDeps),
+      ...createRagTools(toolDeps),
+      ...createGraphTools(toolDeps),
       createSearchTools(toolDeps)[1], // Only use the google_lens tool
     ];
   }
