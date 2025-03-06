@@ -166,7 +166,7 @@ const productCardTestHandler: RequestHandler = async (req, res) => {
       response = await productCardAgent.processMessage(message);
     }
 
-    const parsedResponse = JSON.parse(response);
+    const parsedResponse = JSON.parse(response as string);
     res.json(parsedResponse);
   } catch (error) {
     console.error("Error processing product card request:", error);

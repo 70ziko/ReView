@@ -1,82 +1,75 @@
 import { ChatOpenAI } from "@langchain/openai";
-// import { OpenAIEmbeddings } from "@langchain/openai";
-import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
 import { ResponseFormatter } from "./response-formatter";
-
 import {
   ChatPromptTemplate,
-  MessagesPlaceholder,
   SystemMessagePromptTemplate,
 } from "@langchain/core/prompts";
-// import { createProductTools } from "../tools/product-tools.js";
-// import { createNetworkTools } from "../tools/network-tools.js";
-// import { createSearchTools } from "../tools/search-tools.js";
 import {
-  AGENT_CONFIG,
-  // EMBEDDINGS_CONFIG,
   LLM_CONFIG,
+  EMBEDDINGS_CONFIG,
   ASSISTANT_SYSTEM_MESSAGE,
 } from "./constants.js";
-import { LangTools } from "../tools/types";
-import { StructuredOutputParser } from "@langchain/core/output_parsers";
-import { ChatGeneration } from "@langchain/core/outputs";
+import { RunnableSequence } from "@langchain/core/runnables";
+import { JsonOutputFunctionsParser } from "langchain/output_parsers";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { createProductTools } from "../tools/product-tools.js";
+import { createNetworkTools } from "../tools/network-tools.js";
+import { createSearchTools } from "../tools/search-tools.js";
+import { LangTools, ToolDependencies } from "../tools/types";
+import { convertToOpenAIFunction } from "@langchain/core/utils/function_calling";
+
+// Define the expected output structure of the product card
+interface ProductCardOutput {
+  prices: { min: number; avg: number };
+  product_id: string;
+  category: string;
+}
 
 export class ProductCardAgent {
-  private baseLlm: ChatOpenAI;
-  private structuredLlm: any; // Using any temporarily to avoid type issues
-  // private embeddingsModel: OpenAIEmbeddings;
-  private tools: LangTools;
-  private parser: StructuredOutputParser<typeof ResponseFormatter>;
-  private executor: AgentExecutor | null = null;
+  private llm: ChatOpenAI;
+  private chain: RunnableSequence;
 
   constructor() {
-    this.baseLlm = new ChatOpenAI({
+    this.llm = new ChatOpenAI({
       ...LLM_CONFIG,
-      // modelName: "gpt-4-1106-preview",
       temperature: 0,
     });
 
-    this.parser = new StructuredOutputParser(ResponseFormatter);
-    this.structuredLlm = this.baseLlm.withStructuredOutput(this.parser, {
-      name: "format_product_card",
-      method: "jsonSchema",
-      strict: true,
-    });
+    const functionName = "generate_product_card";
+    const schema = {
+      name: functionName,
+      description: "Generate a structured product card with all relevant information",
+      parameters: this.createJsonSchema(),
+    };
 
-    // this.embeddingsModel = new OpenAIEmbeddings(EMBEDDINGS_CONFIG);
-
-    // const toolDeps = { embeddingsModel: this.embeddingsModel };
-    this.tools = [
-      // ...createProductTools(toolDeps),
-      // ...createNetworkTools(toolDeps),
-      // createSearchTools(toolDeps)[1], // Only use the google_lens tool
-    ];
-  }
-
-  async initialize(): Promise<void> {
-    if (this.executor) return;
-
-    const formattedSystemMessage = SystemMessagePromptTemplate.fromTemplate(
-      ASSISTANT_SYSTEM_MESSAGE
-    );
-
+    // Create a prompt template
     const prompt = ChatPromptTemplate.fromMessages([
-      formattedSystemMessage,
-      ["user", "{input}"],
-      new MessagesPlaceholder("agent_scratchpad"),
+      SystemMessagePromptTemplate.fromTemplate(ASSISTANT_SYSTEM_MESSAGE),
+      ["human", "{input}"],
     ]);
 
-    const agent = await createOpenAIToolsAgent({
-      llm: this.structuredLlm,
-      tools: this.tools,
-      prompt: prompt,
-    });
+    // Create an output parser
+    const outputParser = new JsonOutputFunctionsParser<ProductCardOutput>();
 
-    this.executor = AgentExecutor.fromAgentAndTools({
-      agent,
-      tools: this.tools,
-      ...AGENT_CONFIG,
-    });
+    // Create the chain as a runnable sequence
+    this.chain = RunnableSequence.from([
+      {
+        input: (i: { input: string }) => ({ input: i.input }),
+      },
+      prompt,
+      this.llm.bind({
+        functions: [schema],
+        function_call: { name: functionName }
+      }),
+      outputParser,
+    ]);
+  }
+
+  /**
+   * Creates a JSON schema matching the ResponseFormatter structure
+   */
+  private createJsonSchema() {
+    return productCardSchema;
   }
 
   /**
@@ -87,42 +80,35 @@ export class ProductCardAgent {
   async processMessage(
     message: string,
     callback?: (chunk: string) => void
-  ): Promise<string> {
+  ): Promise<MessageContent> {
     try {
-      if (!this.executor) {
-        await this.initialize();
-      }
-
-      let result;
       if (callback) {
-        // Streaming mode
-        let streamedResponse = "";
-        result = await this.executor!.invoke(
-          { input: message },
-          {
-            callbacks: [
-              {
-                handleLLMNewToken(chunk: string) {
-                  streamedResponse += chunk;
-                  callback(chunk);
-                },
+        // Streaming mode isn't directly supported with function calling
+        // We'll need to handle it differently
+        let result = await this.llm.invoke([
+          { role: "system", content: ASSISTANT_SYSTEM_MESSAGE },
+          { role: "user", content: message }
+        ], {
+          callbacks: [
+            {
+              handleLLMNewToken(chunk: string) {
+                callback(chunk);
               },
-            ],
-          }
-        );
-
-        // Validate final streamed response
-        try {
-          return streamedResponse;
-        } catch (e) {
-          console.error("Streamed response validation failed:", e);
-          // If streaming response is invalid, fall back to the final result
-          return result.output;
-        }
+            },
+          ],
+        });
+        
+        // Parse the content to ensure it matches our schema
+        // try {
+        //   const parsed = JSON.parse(result.content);
+        //   return JSON.stringify(parsed);
+        // } catch (e) {
+          return result.content;
+        // }
       } else {
         // Non-streaming mode
-        result = await this.executor!.invoke({ input: message });
-        return result.output;
+        const result = await this.chain.invoke({ input: message });
+        return JSON.stringify(result);
       }
     } catch (error) {
       console.error("Error processing message:", error);
@@ -141,6 +127,7 @@ export class ProductCardAgent {
       });
     }
   }
+
   /**
    * Process an image along with a message
    * @param message The user's message
@@ -151,45 +138,13 @@ export class ProductCardAgent {
     message: string,
     imageData: string,
     callback?: (chunk: string) => void
-  ): Promise<string> {
+  ): Promise<MessageContent> {
     try {
-      if (!this.executor) {
-        await this.initialize();
-      }
-
-      const input = {
-        input: message,
-        image: imageData, // image URL or base64 string
-      };
-
-      let result;
-      if (callback) {
-        // Streaming mode
-        let streamedResponse = "";
-        result = await this.executor!.invoke(input, {
-          callbacks: [
-            {
-              handleLLMNewToken(token: string) {
-                streamedResponse += token;
-                callback(token);
-              },
-            },
-          ],
-        });
-
-        // Validate final streamed response
-        try {
-          return streamedResponse;
-        } catch (e) {
-          console.error("Streamed response validation failed:", e);
-          // If streaming response is invalid, fall back to the final result
-          return result.output;
-        }
-      } else {
-        // Non-streaming mode
-        result = await this.executor!.invoke(input);
-        return result.output;
-      }
+      // When we have an image, append it to the message
+      const messageWithImage = `${message}\n\nImage: ${imageData}`;
+      
+      // Use the same processing logic as processMessage
+      return this.processMessage(messageWithImage, callback);
     } catch (error) {
       console.error("Error processing message with image:", error);
       // Return a properly formatted error response

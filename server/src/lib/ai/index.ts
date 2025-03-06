@@ -6,7 +6,7 @@ export const chatProductAssistant = new ChatProductAssistant();
 void chatProductAssistant.initialize("system"); // Use 'system' as default userId for initial setup
 
 export const productCardAgent = new ProductCardAgent();
-void productCardAgent.initialize();
+// void productCardAgent.initialize();
 
 export * from "./tools/types.js";
 export * from "./memory/conversation-memory.js";
