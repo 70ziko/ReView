@@ -1,5 +1,4 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { ResponseFormatter } from "./response-formatter";
 import {
   ChatPromptTemplate,
   SystemMessagePromptTemplate,
@@ -9,8 +8,10 @@ import {
   EMBEDDINGS_CONFIG,
   ASSISTANT_SYSTEM_MESSAGE,
 } from "./constants.js";
+import { productCardSchema } from "../schemas/product-card-schema";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { JsonOutputFunctionsParser } from "langchain/output_parsers";
+import { MessageContent } from "@langchain/core/messages";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { createProductTools } from "../tools/product-tools.js";
 import { createNetworkTools } from "../tools/network-tools.js";
@@ -18,8 +19,13 @@ import { createSearchTools } from "../tools/search-tools.js";
 import { LangTools, ToolDependencies } from "../tools/types";
 import { convertToOpenAIFunction } from "@langchain/core/utils/function_calling";
 
-// Define the expected output structure of the product card
 interface ProductCardOutput {
+  product_name: string;
+  score: number;
+  image_url: string;
+  general_review: string;
+  amazon_reviews_ref: string[];
+  alternatives: { name: string; product_id: string; score: number }[];
   prices: { min: number; avg: number };
   product_id: string;
   category: string;
@@ -28,12 +34,24 @@ interface ProductCardOutput {
 export class ProductCardAgent {
   private llm: ChatOpenAI;
   private chain: RunnableSequence;
+  private tools: LangTools;
+  private embeddingsModel: OpenAIEmbeddings;
 
   constructor() {
     this.llm = new ChatOpenAI({
       ...LLM_CONFIG,
       temperature: 0,
     });
+
+    this.embeddingsModel = new OpenAIEmbeddings(EMBEDDINGS_CONFIG);
+    
+    const toolDeps: ToolDependencies = { embeddingsModel: this.embeddingsModel };
+    
+    this.tools = [
+      ...createProductTools(toolDeps),
+      ...createNetworkTools(toolDeps),
+      ...createSearchTools(toolDeps)
+    ];
 
     const functionName = "generate_product_card";
     const schema = {
@@ -42,23 +60,23 @@ export class ProductCardAgent {
       parameters: this.createJsonSchema(),
     };
 
-    // Create a prompt template
     const prompt = ChatPromptTemplate.fromMessages([
       SystemMessagePromptTemplate.fromTemplate(ASSISTANT_SYSTEM_MESSAGE),
       ["human", "{input}"],
     ]);
 
-    // Create an output parser
     const outputParser = new JsonOutputFunctionsParser<ProductCardOutput>();
 
-    // Create the chain as a runnable sequence
     this.chain = RunnableSequence.from([
       {
         input: (i: { input: string }) => ({ input: i.input }),
       },
       prompt,
       this.llm.bind({
-        functions: [schema],
+        functions: [
+          schema,
+          ...this.tools.map(tool => convertToOpenAIFunction(tool))
+        ],
         function_call: { name: functionName }
       }),
       outputParser,
@@ -98,13 +116,7 @@ export class ProductCardAgent {
           ],
         });
         
-        // Parse the content to ensure it matches our schema
-        // try {
-        //   const parsed = JSON.parse(result.content);
-        //   return JSON.stringify(parsed);
-        // } catch (e) {
-          return result.content;
-        // }
+        return result.content;
       } else {
         // Non-streaming mode
         const result = await this.chain.invoke({ input: message });
@@ -112,7 +124,7 @@ export class ProductCardAgent {
       }
     } catch (error) {
       console.error("Error processing message:", error);
-      // Return a properly formatted error response
+
       return JSON.stringify({
         product_name: "Error",
         score: 0,
@@ -140,14 +152,25 @@ export class ProductCardAgent {
     callback?: (chunk: string) => void
   ): Promise<MessageContent> {
     try {
-      // When we have an image, append it to the message
-      const messageWithImage = `${message}\n\nImage: ${imageData}`;
+      // When processing an image, use the google_lens tool directly
+      const googleLensTool = this.tools.find(tool => tool.name === "google_lens");
       
-      // Use the same processing logic as processMessage
+      if (googleLensTool && imageData) {
+        try {
+          const lensResults = await googleLensTool.invoke(imageData);
+          
+          const enhancedMessage = `${message}\n\nImage analysis results: ${lensResults}`;
+          
+          return this.processMessage(enhancedMessage, callback);
+        } catch (error) {
+          console.error("Error using google_lens tool:", error);
+        }
+      }
+      
+      const messageWithImage = `${message}\n\nImage: ${imageData}`;
       return this.processMessage(messageWithImage, callback);
     } catch (error) {
       console.error("Error processing message with image:", error);
-      // Return a properly formatted error response
       return JSON.stringify({
         product_name: "Error",
         score: 0,
