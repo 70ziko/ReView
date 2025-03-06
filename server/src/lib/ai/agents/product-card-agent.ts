@@ -150,7 +150,8 @@ export class ProductCardAgent {
         try {
           const lensResults = await googleLensTool.invoke(imageData);
 
-          const enhancedMessage = `${message}\n\nImage analysis results: ${lensResults}`;
+          const enhancedMessage = `${message}\n\n
+          Use the following Google lens output for researching and constructing a response: ${lensResults}`;
 
           return this.processMessage(enhancedMessage, callback);
         } catch (error) {

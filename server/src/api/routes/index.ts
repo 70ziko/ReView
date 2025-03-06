@@ -9,6 +9,7 @@ import {
   imageProcessHandler,
   promptProcessHandler,
   productCardTestHandler,
+  imageProductCardHandler,
 } from "../controllers/product-review.js";
 import { singleImageUpload } from "../../middleware/upload";
 
@@ -22,5 +23,6 @@ router.post("/image/process", singleImageUpload, imageProcessHandler);
 router.post("/prompt/process", promptProcessHandler);
 router.post("/agent/image/process", singleImageUpload, agentImageProcessHandler);
 router.post("/product-card/test", singleImageUpload, productCardTestHandler);
+router.post('/product-card/image', singleImageUpload, imageProductCardHandler);
 
 export default router;

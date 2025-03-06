@@ -24,6 +24,8 @@ const chatHandler: RequestHandler = async (req, res) => {
 };
 
 const chatImageHandler: RequestHandler = async (req, res) => {
+  // different route for image processing because we will propably run product-card workflow when the user sends an image
+  // or maybe the workflow should be just a tool for the assistant and he'll decide
   const request = req as RequestWithSession;
   try {
     const { message, imageData } = request.body;

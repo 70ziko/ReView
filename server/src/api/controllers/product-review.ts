@@ -184,9 +184,61 @@ const productCardTestHandler: RequestHandler = async (req, res) => {
   }
 };
 
+const imageProductCardHandler: RequestHandler = async (req, res) => {
+  const request = req as RequestWithSession;
+  try {
+    let imageData;
+    
+    if (request.file) {
+      imageData = request.file.buffer.toString('base64');
+    } else if (request.files && Array.isArray(request.files) && request.files.length > 0) {
+      imageData = request.files[0].buffer.toString('base64');
+    } else if (request.body && request.body.imageData) {
+      imageData = request.body.imageData;
+    }
+
+    if (!imageData) {
+      res.status(400).json({ error: "Image data is required" });
+      return;
+    }
+
+    const message = "Create a comprehensive product card for this image, including accurate information about features, pricing, and alternatives.";
+    
+    const productData = await productCardAgent.processMessageWithImage(message, imageData);
+    
+    let parsedResponse;
+    if (typeof productData === 'string') {
+      parsedResponse = JSON.parse(productData);
+    } else {
+      parsedResponse = productData;
+    }
+    
+    await chatProductAssistant.initializeChat(
+      request.session.userId,
+      parsedResponse
+    );
+
+    res.json(parsedResponse);
+  } catch (error) {
+    console.error("Error processing image for product card:", error);
+    res.status(500).json({
+      product_name: "Error",
+      score: 0,
+      image_url: "",
+      general_review: "Failed to process the image for product card generation",
+      amazon_reviews_ref: [],
+      alternatives: [],
+      prices: { min: 0, avg: 0 },
+      product_id: "",
+      category: "error"
+    });
+  }
+};
+
 export {
   imageProcessHandler,
   promptProcessHandler,
   agentImageProcessHandler,
-  productCardTestHandler
+  productCardTestHandler,
+  imageProductCardHandler
 };
