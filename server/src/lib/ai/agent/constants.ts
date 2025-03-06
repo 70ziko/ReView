@@ -4,7 +4,6 @@ export const LLM_CONFIG = {
   streaming: false,
   maxTokens: 500,
   verbose: true,
-  handleParsingErrors: true,
 } as const;
 
 export const EMBEDDINGS_CONFIG = {
@@ -12,7 +11,10 @@ export const EMBEDDINGS_CONFIG = {
 } as const;
 
 export const AGENT_CONFIG = {
-  returnIntermediateSteps: false,
+  returnIntermediateSteps: true,
+  returnOnlyOutputs: true,
+  returnScratchpad: false,
+  handleParsingErrors: false,
   maxIterations: 5,
   // verbose: true,
 } as const;

@@ -1,7 +1,8 @@
 import { ChatOpenAI } from "@langchain/openai";
 // import { OpenAIEmbeddings } from "@langchain/openai";
 import { AgentExecutor, createOpenAIToolsAgent } from "langchain/agents";
-import { ResponseFormatter } from "./response-formatter.js";
+import { ResponseFormatter } from "./response-formatter";
+
 import {
   ChatPromptTemplate,
   MessagesPlaceholder,
@@ -16,13 +17,16 @@ import {
   LLM_CONFIG,
   ASSISTANT_SYSTEM_MESSAGE,
 } from "./constants.js";
-import { LangTools } from "../tools/types.js";
+import { LangTools } from "../tools/types";
+import { StructuredOutputParser } from "@langchain/core/output_parsers";
+import { ChatGeneration } from "@langchain/core/outputs";
 
 export class ProductCardAgent {
   private baseLlm: ChatOpenAI;
   private structuredLlm: any; // Using any temporarily to avoid type issues
   // private embeddingsModel: OpenAIEmbeddings;
   private tools: LangTools;
+  private parser: StructuredOutputParser<typeof ResponseFormatter>;
   private executor: AgentExecutor | null = null;
 
   constructor() {
@@ -32,9 +36,13 @@ export class ProductCardAgent {
       temperature: 0,
     });
 
-    this.structuredLlm = this.baseLlm.withStructuredOutput(ResponseFormatter, {
-      name: "research_format_product_card"
+    this.parser = new StructuredOutputParser(ResponseFormatter);
+    this.structuredLlm = this.baseLlm.withStructuredOutput(this.parser, {
+      name: "research_format_product_card",
+      method: "jsonSchema",
+      strict: true,
     });
+
     // this.embeddingsModel = new OpenAIEmbeddings(EMBEDDINGS_CONFIG);
 
     // const toolDeps = { embeddingsModel: this.embeddingsModel };
