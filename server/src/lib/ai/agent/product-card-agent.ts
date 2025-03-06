@@ -38,7 +38,7 @@ export class ProductCardAgent {
 
     this.parser = new StructuredOutputParser(ResponseFormatter);
     this.structuredLlm = this.baseLlm.withStructuredOutput(this.parser, {
-      name: "research_format_product_card",
+      name: "format_product_card",
       method: "jsonSchema",
       strict: true,
     });
