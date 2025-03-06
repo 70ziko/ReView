@@ -50,7 +50,7 @@ export class ProductCardAgent {
       name: functionName,
       description:
         "Generate a structured product card with all relevant information",
-      parameters: this.createJsonSchema(),
+      parameters: productCardSchema,
     };
 
     const prompt = ChatPromptTemplate.fromMessages([
@@ -74,13 +74,6 @@ export class ProductCardAgent {
       }),
       outputParser,
     ]);
-  }
-
-  /**
-   * Creates a JSON schema matching the ResponseFormatter structure
-   */
-  private createJsonSchema() {
-    return productCardSchema;
   }
 
   /**
