@@ -7,7 +7,6 @@ import { parseGoogleLensInput } from "../../lib/parsers/image-data";
 const imageProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
-    // Handle form data upload
     let imageData;
     
     if (request.file) {
@@ -25,8 +24,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
 
     await chatProductAssistant.clearHistory(request.session.userId);
 
-    // In a real implementation, this would process the image
-    // Here we're returning dummy data
+    // returning dummy data instead of image processing for now
     const dummyResponse: ProductResponse = {
       product_name: "Premium Bluetooth Headphones",
       score: 3,
@@ -58,6 +56,9 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       request.session.userId,
       dummyResponse
     );
+    
+    // 3 second delay to simulate processing time
+    await new Promise(resolve => setTimeout(resolve, 3000));
     res.json(dummyResponse);
   } catch (error) {
     console.error("Error processing image:", error);
