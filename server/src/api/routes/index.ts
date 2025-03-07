@@ -6,11 +6,8 @@ import {
   chatClearHandler,
 } from "../controllers/chat.js";
 import {
-  agentImageProcessHandler,
   imageProcessHandler,
   promptProcessHandler,
-  productCardTestHandler,
-  imageProductCardHandler,
 } from "../controllers/product-review.js";
 import { debugSingleImageUpload } from "../../middleware/upload";
 
@@ -39,8 +36,5 @@ const handleMulterError = (
 
 router.post("/image/process", debugSingleImageUpload, handleMulterError, imageProcessHandler);
 router.post("/prompt/process", promptProcessHandler);
-router.post("/agent/image/process", debugSingleImageUpload, handleMulterError, agentImageProcessHandler);
-router.post("/product-card/test", debugSingleImageUpload, handleMulterError, productCardTestHandler);
-router.post('/product-card/image', debugSingleImageUpload, handleMulterError, imageProductCardHandler);
 
 export default router;

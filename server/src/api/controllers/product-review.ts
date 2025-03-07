@@ -7,102 +7,47 @@ import { parseGoogleLensInput } from "../../lib/parsers/image-data";
 const imageProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
-    const imageData = request.body.image;
+    const { 
+      image: imageData,
+      message = "Create a comprehensive product card for this image, including accurate information about features, pricing, and alternatives."
+    } = req.body;
 
     if (!imageData) {
       res.status(400).json({ error: "Image data is required" });
       return;
     }
     console.log('Received image data:', imageData);
-    
-    // Convert file buffer to base64
-    // const imageData = request.file.buffer.toString('base64');
 
-    await chatProductAssistant.clearHistory(request.session.userId);
-
-    // returning dummy data instead of image processing for now
-    const dummyResponse: ProductResponse = {
-      product_name: "From Server Bluetooth Headphones",
-      score: 3,
-      image_url: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%3Fid%3DOIP.RZjRvaO9IfDAwpD20I7e5wHaHa%26pid%3DApi&f=1&ipt=4193dbc8386fa693a055c6876e79db425f03a1a71c09a49f80e556b2b9f15661&ipo=images",
-      general_review:
-        "High-quality wireless headphones with excellent sound quality and comfortable fit. Battery life could be improved.",
-      amazon_reviews_ref: "https://amazon.com/product/123456/reviews",
-      alternatives: [
-        {
-          name: "Server Bluetooth Headphones",
-          product_id: "BT78901",
-          score: 4,
-        },
-        {
-          name: "Premium Wired Headphones",
-          product_id: "WH45678",
-          score: 4,
-        },
-      ],
-      prices: {
-        min: 79.99,
-        avg: 94.5,
-      },
-      product_id: "BT12345",
-      category: "Electronics/Audio/Headphones",
-    };
-
-    await chatProductAssistant.initializeChat(
-      request.session.userId,
-      dummyResponse
-    );
-
-    // 3 second delay to simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    res.json(dummyResponse);
-  } catch (error) {
-    console.error("Error processing image:", error);
-    res.status(500).json({ error: "Failed to process image" });
-  }
-};
-
-const agentImageProcessHandler: RequestHandler = async (req, res) => {
-  const request = req as RequestWithSession;
-  try {
-    // Check for file in multer's request.file
-    if (!request.file || !request.file.buffer) {
-      console.error('No valid file received in agent handler');
-      return res.status(400).json({ error: "No valid image file received" });
+    let response;
+    if (imageData) {
+      response = await productCardAgent.processMessageWithImage(message, JSON.stringify(imageData));
+    } else {
+      response = await productCardAgent.processMessage(message);
     }
 
-    // Log file details for debugging
-    console.log('Received file in agent handler:', {
-      originalname: request.file.originalname,
-      mimetype: request.file.mimetype,
-      size: request.file.size
-    });
-
-    // Convert file buffer to base64
-    const imageData = request.file.buffer.toString('base64');
+    const parsedResponse = JSON.parse(response as string);
 
     await chatProductAssistant.clearHistory(request.session.userId);
-    
-    const parsedImageData = parseGoogleLensInput(imageData);
-    const imageResponse = await serpGoogleLens(parsedImageData);
-
-    const productData = await productCardAgent.processMessageWithImage(
-      `Present the data from the google lens api into a product card json with a public 
-      consensus on the review, prices, and present alternatives. 
-      Use the tools you have available to get the information from the databas. Google lens response:
-      \n${JSON.stringify(imageResponse)}`,
-      imageData
-    );
-
     await chatProductAssistant.initializeChat(
       request.session.userId,
-      productData
+      parsedResponse
+
     );
 
-    res.json(productData);
+    res.json(parsedResponse);
   } catch (error) {
-    console.error("Error processing image:", error);
-    res.status(500).json({ error: "Failed to process image" });
+    console.error("Error processing product card request:", error);
+    res.status(500).json({
+      product_name: "Error",
+      score: 0,
+      image_url: "",
+      general_review: "Failed to process the request",
+      amazon_reviews_ref: [],
+      alternatives: [],
+      prices: { min: 0, avg: 0 },
+      product_id: "",
+      category: "error"
+    });
   }
 };
 
@@ -156,95 +101,7 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
-const productCardTestHandler: RequestHandler = async (req, res) => {
-  try {
-    const { message, imageData } = req.body;
-
-    if (!message) {
-      res.status(400).json({ error: "Message is required in request body" });
-      return;
-    }
-
-    let response;
-    if (imageData) {
-      response = await productCardAgent.processMessageWithImage(message, imageData);
-    } else {
-      response = await productCardAgent.processMessage(message);
-    }
-
-    const parsedResponse = JSON.parse(response as string);
-    res.json(parsedResponse);
-  } catch (error) {
-    console.error("Error processing product card request:", error);
-    res.status(500).json({
-      product_name: "Error",
-      score: 0,
-      image_url: "",
-      general_review: "Failed to process the request",
-      amazon_reviews_ref: [],
-      alternatives: [],
-      prices: { min: 0, avg: 0 },
-      product_id: "",
-      category: "error"
-    });
-  }
-};
-
-const imageProductCardHandler: RequestHandler = async (req, res) => {
-  const request = req as RequestWithSession;
-  try {
-    let imageData;
-    
-    if (request.file) {
-      imageData = request.file.buffer.toString('base64');
-    } else if (request.files && Array.isArray(request.files) && request.files.length > 0) {
-      imageData = request.files[0].buffer.toString('base64');
-    } else if (request.body && request.body.imageData) {
-      imageData = request.body.imageData;
-    }
-
-    if (!imageData) {
-      res.status(400).json({ error: "Image data is required" });
-      return;
-    }
-
-    const message = "Create a comprehensive product card for this image, including accurate information about features, pricing, and alternatives.";
-    
-    const productData = await productCardAgent.processMessageWithImage(message, imageData);
-    
-    let parsedResponse;
-    if (typeof productData === 'string') {
-      parsedResponse = JSON.parse(productData);
-    } else {
-      parsedResponse = productData;
-    }
-    
-    await chatProductAssistant.initializeChat(
-      request.session.userId,
-      parsedResponse
-    );
-
-    res.json(parsedResponse);
-  } catch (error) {
-    console.error("Error processing image for product card:", error);
-    res.status(500).json({
-      product_name: "Error",
-      score: 0,
-      image_url: "",
-      general_review: "Failed to process the image for product card generation",
-      amazon_reviews_ref: [],
-      alternatives: [],
-      prices: { min: 0, avg: 0 },
-      product_id: "",
-      category: "error"
-    });
-  }
-};
-
 export {
   imageProcessHandler,
   promptProcessHandler,
-  agentImageProcessHandler,
-  productCardTestHandler,
-  imageProductCardHandler
 };
