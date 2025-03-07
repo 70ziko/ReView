@@ -1,8 +1,6 @@
 import { RequestHandler } from "express";
 import { ProductResponse, RequestWithSession } from "../routes/types";
 import { chatProductAssistant, productCardAgent } from "../../lib/ai";
-import serpGoogleLens from "../../services/serp-google-lens";
-import { parseGoogleLensInput } from "../../lib/parsers/image-data";
 
 const imageProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
