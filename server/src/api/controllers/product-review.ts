@@ -17,6 +17,9 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       imageData = request.body.imageData;
     }
 
+    console.log('req.body', JSON.stringify(request.body));
+    console.log('req.file', JSON.stringify(request.file));
+
     if (!imageData) {
       res.status(400).json({ error: "Image data is required" });
       return;
@@ -56,7 +59,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       request.session.userId,
       dummyResponse
     );
-    
+
     // 3 second delay to simulate processing time
     await new Promise(resolve => setTimeout(resolve, 3000));
     res.json(dummyResponse);
