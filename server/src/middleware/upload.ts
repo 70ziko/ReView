@@ -20,15 +20,22 @@ const memoryStorage = multer.memoryStorage();
 
 // accept only images
 const imageFileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  console.log('Processing file:', file.originalname, 'Type:', file.mimetype);
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  
-  if (allowedMimeTypes.includes(file.mimetype)) {
+  console.log('Processing file:', file.originalname);
+  console.log('File details:', {
+    mimetype: file.mimetype,
+    originalname: file.originalname,
+    fieldname: file.fieldname,
+    size: file.size
+  });
+
+  // More permissive check for image files
+  if (file.mimetype.startsWith('image/') || 
+      file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
     console.log('File accepted:', file.originalname);
     cb(null, true);
   } else {
-    console.log('File rejected:', file.originalname, '- Invalid type:', file.mimetype);
-    cb(new Error('Invalid file type. Only JPEG, PNG, GIF, and WebP images are allowed.'));
+    console.log('File rejected:', file.originalname);
+    cb(new Error('Invalid file type. Only image files are allowed.'));
   }
 };
 
@@ -53,13 +60,22 @@ export const singleImageUpload = memoryUpload.single('image');
 
 export const debugSingleImageUpload = (req: any, res: any, next: any) => {
   console.log('Starting single image upload...');
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('Request body:', req.body);
+  
   singleImageUpload(req, res, (err) => {
     if (err) {
-      console.error('Upload error:', err.message);
+      console.error('Upload error:', err);
+      console.error('Error stack:', err.stack);
     } else if (req.file) {
-      console.log('Upload successful:', req.file.originalname, 'Size:', req.file.size, 'bytes');
+      console.log('Upload successful:');
+      console.log('- Original name:', req.file.originalname);
+      console.log('- Mime type:', req.file.mimetype);
+      console.log('- Size:', req.file.size, 'bytes');
+      console.log('- Field name:', req.file.fieldname);
     } else {
       console.log('No file was uploaded');
+      console.log('Request body after multer:', req.body);
     }
     next(err);
   });

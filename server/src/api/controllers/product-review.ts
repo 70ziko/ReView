@@ -7,37 +7,30 @@ import { parseGoogleLensInput } from "../../lib/parsers/image-data";
 const imageProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
-    let imageData;
-    
-    if (request.file) {
-      imageData = request.file.buffer.toString('base64');
-    } else if (request.files && Array.isArray(request.files) && request.files.length > 0) {
-      imageData = request.files[0].buffer.toString('base64');
-    } else if (request.body && request.body.imageData) {
-      imageData = request.body.imageData;
-    }
-
-    console.log('req.body', JSON.stringify(request.body));
-    console.log('req.file', JSON.stringify(request.file));
+    const imageData = request.body.image;
 
     if (!imageData) {
       res.status(400).json({ error: "Image data is required" });
       return;
     }
+    console.log('Received image data:', imageData);
+    
+    // Convert file buffer to base64
+    // const imageData = request.file.buffer.toString('base64');
 
     await chatProductAssistant.clearHistory(request.session.userId);
 
     // returning dummy data instead of image processing for now
     const dummyResponse: ProductResponse = {
-      product_name: "Premium Bluetooth Headphones",
+      product_name: "From Server Bluetooth Headphones",
       score: 3,
-      image_url: "https://example.com/images/headphones.jpg",
+      image_url: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse1.mm.bing.net%2Fth%3Fid%3DOIP.RZjRvaO9IfDAwpD20I7e5wHaHa%26pid%3DApi&f=1&ipt=4193dbc8386fa693a055c6876e79db425f03a1a71c09a49f80e556b2b9f15661&ipo=images",
       general_review:
         "High-quality wireless headphones with excellent sound quality and comfortable fit. Battery life could be improved.",
       amazon_reviews_ref: "https://amazon.com/product/123456/reviews",
       alternatives: [
         {
-          name: "Budget Bluetooth Headphones",
+          name: "Server Bluetooth Headphones",
           product_id: "BT78901",
           score: 4,
         },
@@ -72,16 +65,25 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
 const agentImageProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
-    const { imageData } = request.body;
-
-    if (!imageData) {
-      res.status(400).json({ error: "Image data is required" });
-      return;
+    // Check for file in multer's request.file
+    if (!request.file || !request.file.buffer) {
+      console.error('No valid file received in agent handler');
+      return res.status(400).json({ error: "No valid image file received" });
     }
+
+    // Log file details for debugging
+    console.log('Received file in agent handler:', {
+      originalname: request.file.originalname,
+      mimetype: request.file.mimetype,
+      size: request.file.size
+    });
+
+    // Convert file buffer to base64
+    const imageData = request.file.buffer.toString('base64');
 
     await chatProductAssistant.clearHistory(request.session.userId);
     
-    const parsedImageData = parseGoogleLensInput(imageData); 
+    const parsedImageData = parseGoogleLensInput(imageData);
     const imageResponse = await serpGoogleLens(parsedImageData);
 
     const productData = await productCardAgent.processMessageWithImage(

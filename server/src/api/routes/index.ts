@@ -1,4 +1,5 @@
 import express from "express";
+import multer from "multer";
 import {
   chatHandler,
   chatImageHandler,
@@ -11,7 +12,7 @@ import {
   productCardTestHandler,
   imageProductCardHandler,
 } from "../controllers/product-review.js";
-import { singleImageUpload } from "../../middleware/upload";
+import { debugSingleImageUpload } from "../../middleware/upload";
 
 const router = express.Router();
 
@@ -19,10 +20,27 @@ router.post("/chat", chatHandler);
 router.post("/chat/image", chatImageHandler);
 router.post("/chat/clear", chatClearHandler);
 
-router.post("/image/process", singleImageUpload, imageProcessHandler);
+// Error handling middleware for multer errors
+const handleMulterError = (
+  err: Error | multer.MulterError,
+  _req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  if (err instanceof multer.MulterError) {
+    console.error('Multer error:', err);
+    return res.status(400).json({ error: `Upload error: ${err.message}` });
+  } else if (err) {
+    console.error('Upload error:', err);
+    return res.status(500).json({ error: err.message });
+  }
+  next();
+};
+
+router.post("/image/process", debugSingleImageUpload, handleMulterError, imageProcessHandler);
 router.post("/prompt/process", promptProcessHandler);
-router.post("/agent/image/process", singleImageUpload, agentImageProcessHandler);
-router.post("/product-card/test", singleImageUpload, productCardTestHandler);
-router.post('/product-card/image', singleImageUpload, imageProductCardHandler);
+router.post("/agent/image/process", debugSingleImageUpload, handleMulterError, agentImageProcessHandler);
+router.post("/product-card/test", debugSingleImageUpload, handleMulterError, productCardTestHandler);
+router.post('/product-card/image', debugSingleImageUpload, handleMulterError, imageProductCardHandler);
 
 export default router;

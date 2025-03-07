@@ -26,11 +26,22 @@ app.use(cors({
 }));
 
 // Configure middleware
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(morgan("dev"));
-
 app.use(sessionMiddleware);
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/image/') || req.path.includes('/upload')) {
+    return next();
+  }
+  express.json({ limit: "50mb" })(req, res, next);
+});
+
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/image/') || req.path.includes('/upload')) {
+    return next();
+  }
+  express.urlencoded({ extended: true, limit: "50mb" })(req, res, next);
+});
 
 io.use(wrapMiddleware(sessionMiddleware));
 
