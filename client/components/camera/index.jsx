@@ -2,12 +2,14 @@ import { Button, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRef, useState } from 'react';
 import { cssInterop } from 'nativewind';
+import { Icon } from '../ui/icon';
+import { MessageSquare } from 'lucide-react-native';
 
 cssInterop(CameraView, {
   className: 'style',
 });
 
-export const Camera = ({ onTakePhoto }) => {
+export const Camera = ({ onTakePhoto, onSkipPhoto }) => {
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef();
@@ -39,35 +41,42 @@ export const Camera = ({ onTakePhoto }) => {
   };
 
   return (
-    <View className={'flex-1 justify-center'}>
-      <CameraView
-        className={'flex-1'}
-        facing={facing}
-        mode={'picture'}
-        ref={ref}
-      >
-        <View
-          className={
-            'flex-1 flex-col-reverse items-center bg-transparent pb-16'
-          }
+    <CameraView
+      className={'flex-1 justify-end'}
+      facing={facing}
+      mode={'picture'}
+      ref={ref}
+    >
+      <View className={'absolute bottom-12 flex-row items-center'}>
+        <Pressable
+          onPress={() => handleTakePhoto()}
+          className={'flex-1 items-center'}
         >
-          <Pressable onPress={() => handleTakePhoto()} className={''}>
-            {({ pressed }) => (
-              <View
-                className={`h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-transparent ${pressed ? 'opacity-50' : 'opacity-100'}`}
-              >
-                <View className={'h-16 w-16 rounded-full bg-white'} />
-              </View>
-            )}
-          </Pressable>
-          {/*<TouchableOpacity*/}
-          {/*  className={'flex-1 items-center self-end'}*/}
-          {/*  onPress={toggleCameraFacing}*/}
-          {/*>*/}
-          {/*  <Text className={'text-bold text-2xl text-white'}>Flip Camera</Text>*/}
-          {/*</TouchableOpacity>*/}
-        </View>
-      </CameraView>
-    </View>
+          {({ pressed }) => (
+            <View
+              className={`h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-transparent ${pressed ? 'opacity-50' : 'opacity-100'}`}
+            >
+              <View className={'h-16 w-16 rounded-full bg-white'} />
+            </View>
+          )}
+        </Pressable>
+        <Pressable
+          onPress={() => onSkipPhoto()}
+          className={'absolute right-10'}
+        >
+          {({ pressed }) => (
+            <View
+              className={`h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-transparent ${pressed ? 'opacity-50' : 'opacity-100'}`}
+            >
+              <Icon
+                as={MessageSquare}
+                className={'h-8 w-8 rounded-full fill-white text-white'}
+                fill={'white'}
+              />
+            </View>
+          )}
+        </Pressable>
+      </View>
+    </CameraView>
   );
 };

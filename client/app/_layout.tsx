@@ -14,8 +14,7 @@ export default function RootLayout() {
             name={'index'}
             options={{ title: 'Home', headerShown: false }}
           />
-          <Stack.Screen name={'score'} options={{ title: 'Score' }} />
-          <Stack.Screen name={'chat'} options={{ title: 'Chat' }} />
+          <Stack.Screen name={'chat'} options={{ title: 'ReView' }} />
         </Stack>
       </QueryClientProvider>
     </GluestackUIProvider>

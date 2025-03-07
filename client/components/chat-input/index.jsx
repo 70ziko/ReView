@@ -1,15 +1,11 @@
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Textarea, TextareaInput } from '../ui/textarea';
 import { SendIcon } from 'lucide-react-native';
 import { Icon } from '../ui/icon';
 import { useEffect, useState } from 'react';
 
-export const ChatInput = ({ onChatSubmit }) => {
+export const ChatInput = ({ onSubmit }) => {
   const [chatText, setchatText] = useState('');
-
-  useEffect(() => {
-    console.log('Chat text changed:', chatText);
-  }, [chatText]);
 
   return (
     <View className={'flex-row items-center gap-3'}>
@@ -32,7 +28,14 @@ export const ChatInput = ({ onChatSubmit }) => {
           'items-center justify-center rounded-full border-2 border-primary-300 bg-white p-3'
         }
       >
-        <Icon as={SendIcon} className={'h-8 w-8 text-primary-500'} />
+        <Pressable
+          onPress={() => {
+            onSubmit(chatText);
+            setchatText('');
+          }}
+        >
+          <Icon as={SendIcon} className={'h-8 w-8 text-primary-500'} />
+        </Pressable>
       </View>
     </View>
   );
