@@ -5,6 +5,7 @@ import {
   Keyboard,
   Easing,
   FlatList,
+  Platform,
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
@@ -25,6 +26,7 @@ export const ChatScreen = () => {
 
   useEffect(() => {
     const keyboardShow = Keyboard.addListener('keyboardDidShow', (event) => {
+      if (Platform.OS === 'android') return;
       Animated.timing(translateY, {
         toValue: -event.endCoordinates.height,
         duration: 20,
@@ -67,10 +69,36 @@ export const ChatScreen = () => {
     queryKey: [imageUri],
     queryFn: () => processImage(imageUri),
     enabled: !!imageUri,
+    retry: 0,
   });
 
+  const { mutate: getProduct, isPending: getProductIsPending } = useMutation({
+    queryFn: (imageUri) => processImage(imageUri),
+    onSuccess: (data) => {
+      setMessages([
+        {
+          author: 'bot',
+          type: 'product',
+          content: data,
+          time: getTime(),
+        },
+        {
+          author: 'bot',
+          type: 'message',
+          content: `Here are some alternatives:
+${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
+          time: getTime(),
+        },
+      ]);
+    },
+  });
+
+  useEffect(() => {
+    getProduct(imageUri);
+  }, []);
+
   const {
-    mutate: getResponse,
+    mutateAsync: getResponse,
     isPending: getResponseIsPending,
     error: responseError,
   } = useMutation({
@@ -86,42 +114,11 @@ export const ChatScreen = () => {
       ]);
     },
     onError: (error) => {
-      console.error(error);
-    },
-  });
-
-  useEffect(() => {
-    if (!product) return;
-    setMessages([
-      {
-        author: 'bot',
-        type: 'product',
-        content: product,
-        time: getTime(),
-      },
-      {
-        author: 'bot',
-        type: 'message',
-        content: `Here are some alternatives:
-${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
-        time: getTime(),
-      },
-    ]);
-  }, [product]);
-
-  useEffect(() => {
-    if (productError) {
-      handleToast({
-        action: 'error',
-        message: 'Błąd pobierania danych produktu',
-      });
-    }
-    if (responseError) {
       handleToast({
         action: 'error',
         message: 'Błąd pobierania odpowiedzi',
       });
-    }
+    },
   });
 
   const handleAddMessages = (messagesToAdd) => {
@@ -132,7 +129,7 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     handleAddMessages([
       { author: 'user', type: 'message', content: message, time: getTime() },
     ]);
-    getResponse(message);
+    await getResponse(message);
   };
 
   const flatListRef = useRef(null);
@@ -150,7 +147,6 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
         ref={flatListRef}
         data={messages}
         renderItem={({ item: message, index }) => {
-          console.log('message:', message);
           if (message.type === 'product') {
             return (
               <ProductCard key={message.index} product={message.content} />
@@ -158,8 +154,9 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
           }
           return <ChatMessage key={message.index} message={message} />;
         }}
-        contentContainerClassName={'flex-1 gap-5 px-6 pt-6'}
+        contentContainerClassName={'flex-1 gap-5 px-6 pt-6 justify-end'}
         className={'flex-1'}
+        scrollEnabled={true}
       />
       <View className={'px-6 pb-6 pt-4'}>
         <ChatInput onSubmit={handleChatSubmit} />

@@ -7,6 +7,13 @@ import { useEffect, useState } from 'react';
 export const ChatInput = ({ onSubmit }) => {
   const [chatText, setchatText] = useState('');
 
+  const handleSubmit = () => {
+    if (chatText.length > 0) {
+      onSubmit(chatText);
+      setchatText('');
+    }
+  };
+
   return (
     <View className={'flex-row items-center gap-3'}>
       <Textarea
@@ -28,12 +35,7 @@ export const ChatInput = ({ onSubmit }) => {
           'items-center justify-center rounded-full border-2 border-primary-300 bg-white p-3'
         }
       >
-        <Pressable
-          onPress={() => {
-            onSubmit(chatText);
-            setchatText('');
-          }}
-        >
+        <Pressable onPress={() => handleSubmit(chatText)}>
           <Icon as={SendIcon} className={'h-8 w-8 text-primary-500'} />
         </Pressable>
       </View>
