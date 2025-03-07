@@ -4,42 +4,59 @@ import { chatProductAssistant, productCardAgent } from "../../lib/ai";
 
 const imageProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
+  
+  console.log('Image process request received');
+  
   try {
-    const { 
-      image: imageData,
-      message = "Create a comprehensive product card for this image, including accurate information about features, pricing, and alternatives."
-    } = req.body;
-
-    if (!imageData) {
-      res.status(400).json({ error: "Image data is required" });
-      return;
+    // Check if we have a file from multer
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file uploaded" });
     }
-    console.log('Received image data:', imageData);
-
-    let response;
-    if (imageData) {
-      response = await productCardAgent.processMessageWithImage(message, JSON.stringify(imageData));
-    } else {
-      response = await productCardAgent.processMessage(message);
-    }
-
+    
+    console.log(`Processing file: ${req.file.originalname} (${req.file.mimetype}, ${req.file.size} bytes)`);
+    
+    // Get optional message from req.body
+    const message = req.body && req.body.message 
+      ? req.body.message 
+      : "Create a comprehensive product card for this image, including accurate information about features, pricing, and alternatives.";
+    
+    // Prepare the image data
+    const imageData = {
+      filename: req.file.originalname,
+      mimetype: req.file.mimetype,
+      buffer: req.file.buffer.toString('base64')
+    };
+    
+    console.log('Sending to AI for processing...');
+    
+    // Process the image with the AI agent
+    const response = await productCardAgent.processMessageWithImage(
+      message, 
+      JSON.stringify(imageData.buffer)
+    );
+    
+    console.log('AI processing complete, parsing response');
+    
+    // Parse the AI response
     const parsedResponse = JSON.parse(response as string);
-
+    
+    // Initialize chat with the product information
     await chatProductAssistant.clearHistory(request.session.userId);
     await chatProductAssistant.initializeChat(
       request.session.userId,
       parsedResponse
-
     );
-
-    res.json(parsedResponse);
+    
+    console.log('Successfully processed image, returning response');
+    return res.json(parsedResponse);
+    
   } catch (error) {
     console.error("Error processing product card request:", error);
-    res.status(500).json({
+    return res.status(500).json({
       product_name: "Error",
       score: 0,
       image_url: "",
-      general_review: "Failed to process the request",
+      general_review: "Failed to process the request: " + (error instanceof Error ? error.message : "Unknown error"),
       amazon_reviews_ref: [],
       alternatives: [],
       prices: { min: 0, avg: 0 },
@@ -49,6 +66,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
+// Keep the prompt processor unchanged
 const promptProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
@@ -99,7 +117,4 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
-export {
-  imageProcessHandler,
-  promptProcessHandler,
-};
+export { imageProcessHandler, promptProcessHandler };
