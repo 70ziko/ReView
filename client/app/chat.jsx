@@ -64,6 +64,31 @@ export const ChatScreen = () => {
     setupImageUri();
   }, [params.imageUri]);
 
+  const { mutate: getProduct, isPending: getProductIsPending } = useMutation({
+    mutationFn: (imageUri) => processImage(imageUri),
+    onSuccess: (data) => {
+      setMessages([
+        {
+          author: 'bot',
+          type: 'product',
+          content: data,
+          time: getTime(),
+        },
+        {
+          author: 'bot',
+          type: 'message',
+          content: `Here are some alternatives:
+${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
+          time: getTime(),
+        },
+      ]);
+    },
+  });
+
+  useEffect(() => {
+    if (!!imageUri) getProduct(imageUri);
+  }, []);
+
   const {
     data: product,
     isPending: productIsPending,
@@ -128,28 +153,6 @@ export const ChatScreen = () => {
       keyboardHide.remove();
     };
   }, []);
-
-  useEffect(() => {
-    if (!product) return;
-    
-    if (messages.length === 0) {
-      setMessages([
-        {
-          author: 'bot',
-          type: 'product',
-          content: product,
-          time: getTime(),
-        },
-        {
-          author: 'bot',
-          type: 'message',
-          content: `Here are some alternatives:
-${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
-          time: getTime(),
-        },
-      ]);
-    }
-  }, [product]);
 
   // Handle errors
   useEffect(() => {
