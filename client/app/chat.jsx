@@ -1,10 +1,4 @@
-import {
-  View,
-  Animated,
-  Keyboard,
-  Easing,
-  FlatList,
-} from 'react-native';
+import { View, Animated, Keyboard, Easing, FlatList } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -19,11 +13,11 @@ import { LoadingScreen } from '../components/loading-screen';
 export const ChatScreen = () => {
   const translateY = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef(null);
-  
+
   const { imageUri } = useLocalSearchParams();
   const [messages, setMessages] = useState([]);
   const { handleToast } = useToaster();
-  
+
   const getTime = () => format(new Date(), 'HH:mm');
 
   const {
@@ -34,11 +28,11 @@ export const ChatScreen = () => {
     queryKey: ['productImage', imageUri],
     queryFn: () => processImage(imageUri),
     enabled: !!imageUri,
-    retry: 1,
-    refetchOnWindowFocus: false, // Prevent refetching when window gains focus
-    refetchOnMount: false,       // Prevent refetching when component mounts
-    staleTime: Infinity,         // Prevent automatic refetching
-    cacheTime: Infinity,         // Keep in cache indefinitely
+    retry: 3,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false, 
+    staleTime: Infinity,
+    // cacheTime: Infinity,
   });
 
   const {
@@ -93,7 +87,7 @@ export const ChatScreen = () => {
 
   useEffect(() => {
     if (!product) return;
-    
+
     if (messages.length === 0) {
       setMessages([
         {
@@ -122,7 +116,7 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
         message: 'Error loading product data',
       });
     }
-    
+
     if (responseError) {
       console.error('Response error:', responseError);
       handleToast({

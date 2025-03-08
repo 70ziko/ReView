@@ -16,7 +16,7 @@ export const processImage = async (imageUri, message = null) => {
     console.log('Processing image:', imageUri);
     
     if (Platform.OS === 'web') {
-      // for web send a blob
+      // Web: send a blob
       if (imageUri.startsWith('data:')) {
         console.log('Handling data URI for web');
         
@@ -42,13 +42,14 @@ export const processImage = async (imageUri, message = null) => {
         }
       }
     } else {
-      // For React Native (iOS/Android)
-      let filename = imageUri.split('/').pop();
+      // Native platforms (iOS/Android):
+      let filename = imageUri.split('/').pop() || `photo_${Date.now()}.jpg`;
       let match = /\.(\w+)$/.exec(filename);
       let type = match ? `image/${match[1].toLowerCase()}` : 'image/jpeg';
       
       if (match && match[1].toLowerCase() === 'jpg') type = 'image/jpeg';
       
+      // For native platforms, we just need to pass the URI and metadata
       const file = {
         uri: Platform.OS === 'android' 
           ? imageUri 
@@ -56,7 +57,7 @@ export const processImage = async (imageUri, message = null) => {
             ? imageUri.replace('file://', '') 
             : imageUri,
         type: type,
-        name: filename || `photo_${Date.now()}.jpg`,
+        name: filename,
       };
       
       formData.append('image', file);
