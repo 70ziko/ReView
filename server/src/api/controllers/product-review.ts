@@ -8,19 +8,16 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
   console.log('Image process request received');
   
   try {
-    // Check if we have a file from multer
     if (!req.file) {
       return res.status(400).json({ error: "No image file uploaded" });
     }
     
     console.log(`Processing file: ${req.file.originalname} (${req.file.mimetype}, ${req.file.size} bytes)`);
     
-    // Get optional message from req.body
     const message = req.body && req.body.message 
       ? req.body.message 
       : "Create a comprehensive product card for this image, including accurate information about features, pricing, and alternatives.";
     
-    // Prepare the image data
     const imageData = {
       filename: req.file.originalname,
       mimetype: req.file.mimetype,
@@ -29,7 +26,6 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
     
     console.log('Sending to AI for processing...');
     
-    // Process the image with the AI agent
     const response = await productCardAgent.processMessageWithImage(
       message, 
       JSON.stringify(imageData.buffer)
@@ -37,10 +33,8 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
     
     console.log('AI processing complete, parsing response');
     
-    // Parse the AI response
     const parsedResponse = JSON.parse(response as string);
     
-    // Initialize chat with the product information
     await chatProductAssistant.clearHistory(request.session.userId);
     await chatProductAssistant.initializeChat(
       request.session.userId,

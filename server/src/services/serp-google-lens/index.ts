@@ -10,7 +10,7 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
     if (input.url) {
       imageUrl = input.url;
     } else {
-      // Upload image to get a public URL
+      // upload image to get a public URL
       const uploadResult = await uploadImage({
         base64: input.base64,
         filePath: input.filePath,
@@ -27,6 +27,7 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
       engine: "google_lens",
       url: imageUrl,
       api_key: process.env.SERPAPI_KEY,
+      
     });
 
     console.log(result);
