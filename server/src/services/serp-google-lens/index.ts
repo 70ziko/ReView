@@ -6,7 +6,6 @@ export * from "./types";
 export default async function serpGoogleLens(input: GoogleLensInput) {
   try {
     let imageUrl: string;
-    console.debug("Google Lens input:", input);
 
     if (input.url) {
       imageUrl = input.url;
@@ -30,7 +29,7 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
       api_key: process.env.SERPAPI_KEY,
     });
 
-    console.log(result);
+    // console.debug(result);
 
     return result;
   } catch (error) {
