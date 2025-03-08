@@ -10,6 +10,7 @@ import { setupChatSocket } from "./socket/chat.js";
 import { chatProductAssistant } from "./lib/ai/index.js";
 import path from "path";
 import { prettyLog } from "./lib/loggers/index.js";
+import { initializeDatabase } from "./services/db/index.js";
 
 prettyLog.configure({
   showTimestamp: true,
@@ -83,6 +84,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
+  initializeDatabase();
   try {
     httpServer.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

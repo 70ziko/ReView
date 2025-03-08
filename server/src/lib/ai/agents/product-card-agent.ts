@@ -20,9 +20,6 @@ import { createSearchTools } from "../tools/search-tools.js";
 import { productCardSchema } from "../schemas/product-card-schema.js";
 import { LangTools, ToolDependencies } from "../tools/types.js";
 import { ProductCardOutput } from "./types.js";
-import { prettyLog } from "../../loggers/index.js";
-
-prettyLog.configure({});
 
 export class ProductCardAgent {
   private llm: ChatOpenAI;
