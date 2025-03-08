@@ -163,8 +163,7 @@ export class ProductCardAgent {
         }
       }
 
-      const messageWithImage = `${message}\n\nImage: ${imageData}`;
-      return this.processMessage(messageWithImage, callback);
+      return this.processMessage(message, callback);
     } catch (error) {
       console.error("Error processing message with image:", error);
       return JSON.stringify({
