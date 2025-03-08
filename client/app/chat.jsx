@@ -17,19 +17,15 @@ import useToaster from '../hooks/useToaster';
 import { LoadingScreen } from '../components/loading-screen';
 
 export const ChatScreen = () => {
-  // Animation for keyboard
   const translateY = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef(null);
   
-  // State
   const { imageUri } = useLocalSearchParams();
   const [messages, setMessages] = useState([]);
   const { handleToast } = useToaster();
   
-  // Helper function
   const getTime = () => format(new Date(), 'HH:mm');
 
-  // Query for product data - with proper caching to avoid refetching
   const {
     data: product,
     isPending: productIsPending,
@@ -45,7 +41,6 @@ export const ChatScreen = () => {
     cacheTime: Infinity,         // Keep in cache indefinitely
   });
 
-  // Chat message mutation
   const {
     mutate: getResponse,
     isPending: getResponseIsPending,
@@ -67,7 +62,6 @@ export const ChatScreen = () => {
     },
   });
 
-  // Handle keyboard events
   useEffect(() => {
     const keyboardShow = Keyboard.addListener('keyboardDidShow', (event) => {
       Animated.timing(translateY, {
@@ -97,11 +91,9 @@ export const ChatScreen = () => {
     };
   }, []);
 
-  // Process product data when it's available
   useEffect(() => {
     if (!product) return;
     
-    // Only set messages if they're empty
     if (messages.length === 0) {
       setMessages([
         {
@@ -140,12 +132,10 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     }
   }, [productError, responseError]);
 
-  // Helper to add messages
   const handleAddMessages = (messagesToAdd) => {
     setMessages((prev) => [...prev, ...messagesToAdd]);
   };
 
-  // Submit chat message
   const handleChatSubmit = async (message) => {
     handleAddMessages([
       { author: 'user', type: 'message', content: message, time: getTime() },
@@ -153,14 +143,12 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     getResponse(message);
   };
 
-  // Scroll to bottom when new messages are added
   useEffect(() => {
     if (messages.length > 0) {
       flatListRef.current?.scrollToEnd({ animated: true });
     }
   }, [messages]);
 
-  // Show loading screen while getting product data
   if (productIsPending && !!imageUri) return <LoadingScreen />;
 
   return (

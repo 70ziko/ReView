@@ -20,6 +20,9 @@ import { createSearchTools } from "../tools/search-tools.js";
 import { productCardSchema } from "../schemas/product-card-schema.js";
 import { LangTools, ToolDependencies } from "../tools/types.js";
 import { ProductCardOutput } from "./types.js";
+import { prettyLog } from "../../pretty-log/index.js";
+
+prettyLog.configure({});
 
 export class ProductCardAgent {
   private llm: ChatOpenAI;
@@ -149,6 +152,7 @@ export class ProductCardAgent {
       if (googleLensTool && imageData) {
         try {
           const lensResults = await googleLensTool.invoke(imageData);
+          console.debug("Google Lens results:", lensResults);
 
           const enhancedMessage = `${message}\n\n
           Use the following Google lens output for researching and constructing a response: ${JSON.stringify(lensResults)}`;

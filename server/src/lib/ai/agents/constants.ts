@@ -2,8 +2,8 @@ export const LLM_CONFIG = {
   modelName: "gpt-4o-mini",
   temperature: 0,
   streaming: false,
-  maxTokens: 666,
-  verbose: false,
+  maxTokens: 1500,
+  verbose: true,
 } as const;
 
 export const EMBEDDINGS_CONFIG = {
@@ -15,7 +15,7 @@ export const AGENT_CONFIG = {
   returnOnlyOutputs: true,
   returnScratchpad: false,
   handleParsingErrors: false,
-  maxIterations: 5,
+  // maxIterations: 15,
   // verbose: true,
 } as const;
 
