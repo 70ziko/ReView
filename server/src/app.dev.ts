@@ -9,7 +9,7 @@ import { configureSocketIO, wrapMiddleware } from "./socket/config.js";
 import { setupChatSocket } from "./socket/chat.js";
 import { chatProductAssistant } from "./lib/ai/index.js";
 import path from "path";
-import { prettyLog } from "./lib/pretty-log/index.js";
+import { prettyLog } from "./lib/loggers/index.js";
 
 prettyLog.configure({
   showTimestamp: true,

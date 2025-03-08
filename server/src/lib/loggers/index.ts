@@ -64,7 +64,9 @@ console.log = createLogFn("info", originalConsole.log);
 console.info = createLogFn("info", originalConsole.info);
 console.warn = createLogFn("warn", originalConsole.warn);
 console.error = createLogFn("error", originalConsole.error);
-console.debug = createLogFn("debug", originalConsole.debug);
+console.debug = process.env.NODE_ENV === "development" ?
+  createLogFn("debug", originalConsole.debug)
+  : () => {};
 
 export const prettyLog = {
   debug: createLogFn("debug", originalConsole.debug),
