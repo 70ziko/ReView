@@ -1,10 +1,9 @@
 import {
   View,
-  Animated,
   Keyboard,
-  Easing,
   FlatList,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
@@ -19,14 +18,12 @@ import { LoadingScreen } from '../components/loading-screen';
 import * as FileSystem from 'expo-file-system';
 
 export const ChatScreen = () => {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const flatListRef = useRef(null);
-  
-  const params = useLocalSearchParams();
-  const { handleToast } = useToaster();
+  const { imageUri } = useLocalSearchParams();
   const [messages, setMessages] = useState([]);
+  const flatListRef = useRef(null);
   const [decodedImageUri, setDecodedImageUri] = useState(null);
-  
+  const { handleToast } = useToaster();
+
   const getTime = () => format(new Date(), 'HH:mm');
 
   useEffect(() => {
@@ -64,6 +61,7 @@ export const ChatScreen = () => {
     setupImageUri();
   }, [params.imageUri]);
 
+
   const { mutate: getProduct, isPending: getProductIsPending } = useMutation({
     mutationFn: (imageUri) => processImage(imageUri),
     onSuccess: (data) => {
@@ -90,21 +88,6 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
   }, []);
 
   const {
-    data: product,
-    isPending: productIsPending,
-    error: productError,
-  } = useQuery({
-    queryKey: ['productImage', decodedImageUri],
-    queryFn: () => processImage(decodedImageUri),
-    enabled: !!decodedImageUri,
-    retry: 1,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    staleTime: Infinity,
-    cacheTime: Infinity,
-  });
-
-  const {
     mutate: getResponse,
     isPending: getResponseIsPending,
     error: responseError,
@@ -121,69 +104,12 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
       ]);
     },
     onError: (error) => {
-      console.error('Chat error:', error);
-    },
+      handleToast({
+        action: 'error',
+        message: 'Błąd pobierania odpowiedzi',
+      });
+    }
   });
-
-  useEffect(() => {
-    const keyboardShow = Keyboard.addListener('keyboardDidShow', (event) => {
-      Animated.timing(translateY, {
-        toValue: -event.endCoordinates.height,
-        duration: 20,
-        useNativeDriver: false,
-        easing: Easing.out(Easing.ease),
-      }).start();
-
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 1);
-    });
-
-    const keyboardHide = Keyboard.addListener('keyboardDidHide', () => {
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 20,
-        useNativeDriver: false,
-        easing: Easing.out(Easing.ease),
-      }).start();
-    });
-
-    return () => {
-      keyboardShow.remove();
-      keyboardHide.remove();
-    };
-  }, []);
-
-  // Handle errors
-  useEffect(() => {
-    if (productError) {
-      console.error('Product error:', productError);
-      handleToast({
-        action: 'error',
-        message: 'Error loading product data',
-      });
-    }
-    
-    if (responseError) {
-      console.error('Response error:', responseError);
-      handleToast({
-        action: 'error',
-        message: 'Error getting response',
-      });
-    }
-  }, [productError, responseError]);
-
-  // Clean up temporary files when component unmounts
-  useEffect(() => {
-    return () => {
-      if (Platform.OS === 'android' && decodedImageUri && 
-          decodedImageUri.includes(FileSystem.documentDirectory)) {
-        console.log('Cleaning up temporary file:', decodedImageUri);
-        FileSystem.deleteAsync(decodedImageUri, { idempotent: true })
-          .catch(err => console.log('Error deleting temp file:', err));
-      }
-    };
-  }, [decodedImageUri]);
 
   const handleAddMessages = (messagesToAdd) => {
     setMessages((prev) => [...prev, ...messagesToAdd]);
@@ -197,32 +123,60 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
   };
 
   useEffect(() => {
-    if (messages.length > 0) {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }
+    // Automatyczne przewijanie do najnowszej wiadomości
+    const timeout = setTimeout(() => {
+      flatListRef.current?.scrollToEnd();
+    }, 50);
   }, [messages]);
 
-  if (productIsPending && !!decodedImageUri) return <LoadingScreen />;
+  useEffect(() => {
+    const scrollToBottom = Keyboard.addListener('keyboardDidShow', () => {
+      const timeout = setTimeout(() => {
+        flatListRef.current?.scrollToEnd();
+      }, 50);
+    });
+
+    return () => {
+      scrollToBottom.remove();
+    };
+  }, []);
+
+  if (getProductIsPending && !!imageUri) return <LoadingScreen />;
+
+    // Clean up temporary files when component unmounts
+    useEffect(() => {
+      return () => {
+        if (Platform.OS === 'android' && decodedImageUri && 
+            decodedImageUri.includes(FileSystem.documentDirectory)) {
+          console.log('Cleaning up temporary file:', decodedImageUri);
+          FileSystem.deleteAsync(decodedImageUri, { idempotent: true })
+            .catch(err => console.log('Error deleting temp file:', err));
+        }
+      };
+    }, [decodedImageUri]);
 
   return (
-    <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
+    <KeyboardAvoidingView
+      className={'flex-1'}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'undefined'}
+      keyboardVerticalOffset={100}
+    >
       <FlatList
         ref={flatListRef}
         data={messages}
-        keyExtractor={(item, index) => `message-${index}`}
-        renderItem={({ item: message }) => {
+        renderItem={({ item: message, index }) => {
           if (message.type === 'product') {
             return <ProductCard product={message.content} />;
           }
           return <ChatMessage message={message} />;
         }}
-        contentContainerClassName={'flex-1 gap-5 px-6 pt-6'}
         className={'flex-1'}
+        contentContainerClassName={'mt-auto gap-5 px-6 pt-6'}
       />
       <View className={'px-6 pb-6 pt-4'}>
         <ChatInput onSubmit={handleChatSubmit} />
       </View>
-    </Animated.View>
+    </KeyboardAvoidingView>
   );
 };
 
