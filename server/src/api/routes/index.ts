@@ -12,6 +12,10 @@ import { debugSingleImageUpload } from "../../middleware/upload.js";
 
 const router = express.Router();
 
+router.get("/", (_req, res) => {
+  res.json({ message: "Welcome to the AI API" });
+});
+
 // Chat endpoints
 router.post("/chat", chatHandler);
 router.post("/chat/image", chatImageHandler);
