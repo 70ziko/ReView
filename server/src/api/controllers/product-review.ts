@@ -12,7 +12,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       return res.status(400).json({ error: "No image file uploaded" });
     }
     
-    console.log(`Processing file: ${req.file.originalname} (${req.file.mimetype}, ${req.file.size} bytes)`);
+    console.debug(`Processing file: ${req.file.originalname} (${req.file.mimetype}, ${req.file.size} bytes)`);
     
     const message = req.body && req.body.message 
       ? req.body.message 
@@ -24,14 +24,14 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       buffer: req.file.buffer.toString('base64')
     };
     
-    console.log('Sending to AI for processing...');
+    console.info('Sending to AI for processing...');
     
     const response = await productCardAgent.processMessageWithImage(
       message, 
       JSON.stringify(imageData.buffer)
     );
     
-    console.log('AI processing complete, parsing response');
+    console.info('AI processing complete, parsing response');
     
     const parsedResponse = JSON.parse(response as string);
     
@@ -41,7 +41,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       parsedResponse
     );
     
-    console.log('Successfully processed image, returning response');
+    console.info('Successfully processed image, returning response');
     return res.json(parsedResponse);
     
   } catch (error) {

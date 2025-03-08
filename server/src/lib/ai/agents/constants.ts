@@ -1,9 +1,9 @@
 export const LLM_CONFIG = {
   modelName: "gpt-4o-mini",
-  temperature: 0,
+  temperature: 0.2,
   streaming: false,
   maxTokens: 1500,
-  verbose: true,
+  // verbose: true,
 } as const;
 
 export const EMBEDDINGS_CONFIG = {

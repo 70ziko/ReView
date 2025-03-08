@@ -148,7 +148,6 @@ export class ProductCardAgent {
       const googleLensTool = this.tools.find(
         (tool) => tool.name === "google_lens"
       );
-      console.debug("Google Lens tool:", googleLensTool);
 
       if (googleLensTool && imageData) {
         try {

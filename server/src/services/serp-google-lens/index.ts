@@ -6,6 +6,7 @@ export * from "./types";
 export default async function serpGoogleLens(input: GoogleLensInput) {
   try {
     let imageUrl: string;
+    console.debug("Google Lens input:", input);
 
     if (input.url) {
       imageUrl = input.url;
@@ -15,6 +16,7 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
         base64: input.base64,
         filePath: input.filePath,
       });
+
 
       if (!uploadResult.success) {
         throw new Error(`Failed to upload image: ${uploadResult.error}`);
@@ -34,6 +36,7 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
 
     return result;
   } catch (error) {
+    console.error("Google Lens search failed:", error);
     throw new Error(
       `Google Lens search failed: ${error instanceof Error ? error.message : "Unknown error"}`
     );
