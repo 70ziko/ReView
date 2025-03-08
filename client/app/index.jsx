@@ -21,7 +21,6 @@ export default function Index() {
         const timestamp = new Date().getTime();
         const newFilePath = `${FileSystem.documentDirectory}temp_${timestamp}.jpg`;
         
-        // Copy the file
         await FileSystem.copyAsync({
           from: imageUri,
           to: newFilePath,
@@ -29,22 +28,17 @@ export default function Index() {
         
         console.log('Image copied to:', newFilePath);
         
-        // Verify the new file exists
         const newFileInfo = await FileSystem.getInfoAsync(newFilePath);
         console.log('New file info:', newFileInfo);
         
-        // Use the new path (encoded for safety)
         const encodedUri = encodeURIComponent(newFilePath);
         router.navigate(`chat?imageUri=${encodedUri}`);
       } else {
-        // On iOS and web, we can use the URI directly
-        // Still encode it for safety in URL parameters
         const encodedUri = encodeURIComponent(imageUri);
         router.navigate(`chat?imageUri=${encodedUri}`);
       }
     } catch (error) {
       console.error('Error handling photo:', error);
-      // Navigate anyway but without image
       router.navigate('chat');
     }
   };

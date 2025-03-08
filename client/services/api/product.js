@@ -10,7 +10,6 @@ import * as FileSystem from 'expo-file-system';
  * @returns {Promise<Object>} - Product information
  */
 export const processImage = async (imageUri, message = null) => {
-  // Create form data object
   const formData = new FormData();
   
   try {
@@ -48,15 +47,12 @@ export const processImage = async (imageUri, message = null) => {
         }
       }
     } else if (Platform.OS === 'ios') {
-      // iOS platform handling
       try {
-        // Verify file exists
         const fileInfo = await FileSystem.getInfoAsync(imageUri);
         if (!fileInfo.exists) {
           throw new Error(`File does not exist: ${imageUri}`);
         }
         
-        // Extract filename
         let filename = imageUri.split('/').pop() || `photo_${Date.now()}.jpg`;
         let type = 'image/jpeg';
         
@@ -74,9 +70,7 @@ export const processImage = async (imageUri, message = null) => {
         throw error;
       }
     } else if (Platform.OS === 'android') {
-      // Android platform handling
       try {
-        // Verify file exists
         const fileInfo = await FileSystem.getInfoAsync(imageUri);
         if (!fileInfo.exists) {
           throw new Error(`File does not exist: ${imageUri}`);
@@ -93,10 +87,8 @@ export const processImage = async (imageUri, message = null) => {
         
         console.log(`Read file successfully, base64 length: ${base64.length}`);
         
-        // Extract a filename from the URI
         const filename = imageUri.split('/').pop() || `photo_${Date.now()}.jpg`;
         
-        // Create a data URI
         const dataUri = `data:image/jpeg;base64,${base64}`;
         
         // Create a blob from the data URI for sending
@@ -121,10 +113,9 @@ export const processImage = async (imageUri, message = null) => {
     
     console.log('Sending request to:', `${API_BASE_URL}/api/image/process`);
     
-    // Add detailed logging for Android
+    // detailed logging for Android
     if (Platform.OS === 'android') {
       console.log('FormData keys:');
-      // This is a React Native specific way to inspect FormData
       for (const [key, value] of Object.entries(formData._parts)) {
         console.log(`- Key: ${key}, Value type: ${typeof value}`);
       }

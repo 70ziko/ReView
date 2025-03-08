@@ -29,18 +29,15 @@ export const ChatScreen = () => {
   
   const getTime = () => format(new Date(), 'HH:mm');
 
-  // Decode the image URI when params change
   useEffect(() => {
     const setupImageUri = async () => {
       if (!params.imageUri) return;
       
       try {
-        // Decode the URI parameter
         const decoded = decodeURIComponent(params.imageUri);
         console.log('Decoded URI:', decoded);
         
         if (Platform.OS === 'android' || Platform.OS === 'ios') {
-          // Verify the file exists on native platforms
           const fileInfo = await FileSystem.getInfoAsync(decoded);
           console.log('File exists check:', fileInfo);
           
@@ -54,7 +51,6 @@ export const ChatScreen = () => {
           }
         }
         
-        // If we got here, the file exists (or we're on web where we trust the URI)
         setDecodedImageUri(decoded);
       } catch (error) {
         console.error('Error processing image URI:', error);
