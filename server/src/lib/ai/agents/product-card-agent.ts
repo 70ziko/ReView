@@ -20,6 +20,7 @@ import { createSearchTools } from "../tools/search-tools.js";
 import { productCardSchema } from "../schemas/product-card-schema.js";
 import { LangTools, ToolDependencies } from "../tools/types.js";
 import { ProductCardOutput } from "./types.js";
+import serpGoogleLens from "../../../services/serp-google-lens/index.js";
 
 export class ProductCardAgent {
   private llm: ChatOpenAI;
@@ -141,14 +142,14 @@ export class ProductCardAgent {
     callback?: (chunk: string) => void
   ): Promise<MessageContent> {
     try {
-      // When processing an image, use the google_lens tool directly
-      const googleLensTool = this.tools.find(
-        (tool) => tool.name === "google_lens"
-      );
-
-      if (googleLensTool && imageData) {
+      if (imageData) {
         try {
-          const lensResults = await googleLensTool.invoke(imageData);
+          const googleLensInput = {
+            base64: imageData,
+          }
+          console.debug("Google Lens input in agent:", googleLensInput);
+          const lensResults = await serpGoogleLens(googleLensInput);
+          console.debug("Google Lens results:", lensResults);
 
           const enhancedMessage = `${message}\n\n
           Use the following Google lens output for researching and constructing a response: ${JSON.stringify(lensResults)}`;
@@ -159,8 +160,7 @@ export class ProductCardAgent {
         }
       }
 
-      const messageWithImage = `${message}\n\nImage: ${imageData}`;
-      return this.processMessage(messageWithImage, callback);
+      return this.processMessage(message, callback);
     } catch (error) {
       console.error("Error processing message with image:", error);
       return JSON.stringify({

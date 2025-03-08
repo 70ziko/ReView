@@ -15,14 +15,52 @@ import { ChatMessage } from '../components/chat-message';
 import { format } from 'date-fns';
 import useToaster from '../hooks/useToaster';
 import { LoadingScreen } from '../components/loading-screen';
+import * as FileSystem from 'expo-file-system';
 
 export const ChatScreen = () => {
   const { imageUri } = useLocalSearchParams();
   const [messages, setMessages] = useState([]);
-
+  const flatListRef = useRef(null);
+  const [decodedImageUri, setDecodedImageUri] = useState(null);
   const { handleToast } = useToaster();
 
   const getTime = () => format(new Date(), 'HH:mm');
+
+  useEffect(() => {
+    const setupImageUri = async () => {
+      if (!params.imageUri) return;
+      
+      try {
+        const decoded = decodeURIComponent(params.imageUri);
+        console.log('Decoded URI:', decoded);
+        
+        if (Platform.OS === 'android' || Platform.OS === 'ios') {
+          const fileInfo = await FileSystem.getInfoAsync(decoded);
+          console.log('File exists check:', fileInfo);
+          
+          if (!fileInfo.exists) {
+            console.error('Image file does not exist after decoding URI');
+            handleToast({
+              action: 'error',
+              message: 'Could not find the image file',
+            });
+            return;
+          }
+        }
+        
+        setDecodedImageUri(decoded);
+      } catch (error) {
+        console.error('Error processing image URI:', error);
+        handleToast({
+          action: 'error',
+          message: 'Error processing image',
+        });
+      }
+    };
+
+    setupImageUri();
+  }, [params.imageUri]);
+
 
   const { mutate: getProduct, isPending: getProductIsPending } = useMutation({
     mutationFn: (imageUri) => processImage(imageUri),
@@ -70,11 +108,11 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
         action: 'error',
         message: 'Błąd pobierania odpowiedzi',
       });
-    },
+    }
   });
 
   const handleAddMessages = (messagesToAdd) => {
-    setMessages([...messages, ...messagesToAdd]);
+    setMessages((prev) => [...prev, ...messagesToAdd]);
   };
 
   const handleChatSubmit = async (message) => {
@@ -83,8 +121,6 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     ]);
     getResponse(message);
   };
-
-  const flatListRef = useRef(null);
 
   useEffect(() => {
     // Automatyczne przewijanie do najnowszej wiadomości
@@ -107,6 +143,18 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
 
   if (getProductIsPending && !!imageUri) return <LoadingScreen />;
 
+    // Clean up temporary files when component unmounts
+    useEffect(() => {
+      return () => {
+        if (Platform.OS === 'android' && decodedImageUri && 
+            decodedImageUri.includes(FileSystem.documentDirectory)) {
+          console.log('Cleaning up temporary file:', decodedImageUri);
+          FileSystem.deleteAsync(decodedImageUri, { idempotent: true })
+            .catch(err => console.log('Error deleting temp file:', err));
+        }
+      };
+    }, [decodedImageUri]);
+
   return (
     <KeyboardAvoidingView
       className={'flex-1'}
@@ -118,11 +166,9 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
         data={messages}
         renderItem={({ item: message, index }) => {
           if (message.type === 'product') {
-            return (
-              <ProductCard key={message.index} product={message.content} />
-            );
+            return <ProductCard product={message.content} />;
           }
-          return <ChatMessage key={message.index} message={message} />;
+          return <ChatMessage message={message} />;
         }}
         className={'flex-1'}
         contentContainerClassName={'mt-auto gap-5 px-6 pt-6'}

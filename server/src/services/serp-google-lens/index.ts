@@ -10,7 +10,7 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
     if (input.url) {
       imageUrl = input.url;
     } else {
-      // Upload image to get a public URL
+      // upload image to get a public URL
       const uploadResult = await uploadImage({
         base64: input.base64,
         filePath: input.filePath,
@@ -29,10 +29,11 @@ export default async function serpGoogleLens(input: GoogleLensInput) {
       api_key: process.env.SERPAPI_KEY,
     });
 
-    console.log(result);
+    // console.debug(result);
 
     return result;
   } catch (error) {
+    console.error("Google Lens search failed:", error);
     throw new Error(
       `Google Lens search failed: ${error instanceof Error ? error.message : "Unknown error"}`
     );
