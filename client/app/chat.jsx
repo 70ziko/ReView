@@ -1,4 +1,11 @@
-import { View, Animated, Keyboard, Easing, FlatList } from 'react-native';
+import {
+  View,
+  Animated,
+  Keyboard,
+  Easing,
+  FlatList,
+  Platform,
+} from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -9,30 +16,71 @@ import { ChatMessage } from '../components/chat-message';
 import { format } from 'date-fns';
 import useToaster from '../hooks/useToaster';
 import { LoadingScreen } from '../components/loading-screen';
+import * as FileSystem from 'expo-file-system';
 
 export const ChatScreen = () => {
   const translateY = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef(null);
-
-  const { imageUri } = useLocalSearchParams();
-  const [messages, setMessages] = useState([]);
+  
+  const params = useLocalSearchParams();
   const { handleToast } = useToaster();
-
+  const [messages, setMessages] = useState([]);
+  const [decodedImageUri, setDecodedImageUri] = useState(null);
+  
   const getTime = () => format(new Date(), 'HH:mm');
+
+  // Decode the image URI when params change
+  useEffect(() => {
+    const setupImageUri = async () => {
+      if (!params.imageUri) return;
+      
+      try {
+        // Decode the URI parameter
+        const decoded = decodeURIComponent(params.imageUri);
+        console.log('Decoded URI:', decoded);
+        
+        if (Platform.OS === 'android' || Platform.OS === 'ios') {
+          // Verify the file exists on native platforms
+          const fileInfo = await FileSystem.getInfoAsync(decoded);
+          console.log('File exists check:', fileInfo);
+          
+          if (!fileInfo.exists) {
+            console.error('Image file does not exist after decoding URI');
+            handleToast({
+              action: 'error',
+              message: 'Could not find the image file',
+            });
+            return;
+          }
+        }
+        
+        // If we got here, the file exists (or we're on web where we trust the URI)
+        setDecodedImageUri(decoded);
+      } catch (error) {
+        console.error('Error processing image URI:', error);
+        handleToast({
+          action: 'error',
+          message: 'Error processing image',
+        });
+      }
+    };
+
+    setupImageUri();
+  }, [params.imageUri]);
 
   const {
     data: product,
     isPending: productIsPending,
     error: productError,
   } = useQuery({
-    queryKey: ['productImage', imageUri],
-    queryFn: () => processImage(imageUri),
-    enabled: !!imageUri,
-    retry: 3,
+    queryKey: ['productImage', decodedImageUri],
+    queryFn: () => processImage(decodedImageUri),
+    enabled: !!decodedImageUri,
+    retry: 1,
     refetchOnWindowFocus: false,
-    refetchOnMount: false, 
+    refetchOnMount: false,
     staleTime: Infinity,
-    // cacheTime: Infinity,
+    cacheTime: Infinity,
   });
 
   const {
@@ -87,7 +135,7 @@ export const ChatScreen = () => {
 
   useEffect(() => {
     if (!product) return;
-
+    
     if (messages.length === 0) {
       setMessages([
         {
@@ -116,7 +164,7 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
         message: 'Error loading product data',
       });
     }
-
+    
     if (responseError) {
       console.error('Response error:', responseError);
       handleToast({
@@ -125,6 +173,18 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
       });
     }
   }, [productError, responseError]);
+
+  // Clean up temporary files when component unmounts
+  useEffect(() => {
+    return () => {
+      if (Platform.OS === 'android' && decodedImageUri && 
+          decodedImageUri.includes(FileSystem.documentDirectory)) {
+        console.log('Cleaning up temporary file:', decodedImageUri);
+        FileSystem.deleteAsync(decodedImageUri, { idempotent: true })
+          .catch(err => console.log('Error deleting temp file:', err));
+      }
+    };
+  }, [decodedImageUri]);
 
   const handleAddMessages = (messagesToAdd) => {
     setMessages((prev) => [...prev, ...messagesToAdd]);
@@ -143,7 +203,7 @@ ${product.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     }
   }, [messages]);
 
-  if (productIsPending && !!imageUri) return <LoadingScreen />;
+  if (productIsPending && !!decodedImageUri) return <LoadingScreen />;
 
   return (
     <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
