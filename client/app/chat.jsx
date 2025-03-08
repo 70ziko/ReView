@@ -24,19 +24,8 @@ export const ChatScreen = () => {
 
   const getTime = () => format(new Date(), 'HH:mm');
 
-  const {
-    data: product,
-    isPending: productIsPending,
-    error: productError,
-  } = useQuery({
-    queryKey: [imageUri],
-    queryFn: () => processImage(imageUri),
-    enabled: !!imageUri,
-    retry: 0,
-  });
-
   const { mutate: getProduct, isPending: getProductIsPending } = useMutation({
-    queryFn: (imageUri) => processImage(imageUri),
+    mutationFn: (imageUri) => processImage(imageUri),
     onSuccess: (data) => {
       setMessages([
         {
@@ -57,7 +46,7 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
   });
 
   useEffect(() => {
-    getProduct(imageUri);
+    if (!!imageUri) getProduct(imageUri);
   }, []);
 
   const {
@@ -116,13 +105,13 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     };
   }, []);
 
-  if (productIsPending && !!imageUri) return <LoadingScreen />;
+  if (getProductIsPending && !!imageUri) return <LoadingScreen />;
 
   return (
     <KeyboardAvoidingView
       className={'flex-1'}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={80}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'undefined'}
+      keyboardVerticalOffset={100}
     >
       <FlatList
         ref={flatListRef}
