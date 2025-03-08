@@ -1,11 +1,9 @@
 import {
-  ScrollView,
   View,
-  Animated,
   Keyboard,
-  Easing,
   FlatList,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
@@ -19,41 +17,6 @@ import useToaster from '../hooks/useToaster';
 import { LoadingScreen } from '../components/loading-screen';
 
 export const ChatScreen = () => {
-  // Animacja przesuwania widoku w górę, gdy klawiatura jest otwarta
-
-  const translateY = useRef(new Animated.Value(0)).current;
-  const scrollRef = useRef(null);
-
-  useEffect(() => {
-    const keyboardShow = Keyboard.addListener('keyboardDidShow', (event) => {
-      if (Platform.OS === 'android') return;
-      Animated.timing(translateY, {
-        toValue: -event.endCoordinates.height,
-        duration: 20,
-        useNativeDriver: false,
-        easing: Easing.out(Easing.ease),
-      }).start();
-
-      setTimeout(() => {
-        scrollRef.current?.scrollToEnd({ animated: true });
-      }, 1);
-    });
-
-    const keyboardHide = Keyboard.addListener('keyboardDidHide', () => {
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: 20,
-        useNativeDriver: false,
-        easing: Easing.out(Easing.ease),
-      }).start();
-    });
-
-    return () => {
-      keyboardShow.remove();
-      keyboardHide.remove();
-    };
-  }, []);
-
   const { imageUri } = useLocalSearchParams();
   const [messages, setMessages] = useState([]);
 
@@ -98,7 +61,7 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
   }, []);
 
   const {
-    mutateAsync: getResponse,
+    mutate: getResponse,
     isPending: getResponseIsPending,
     error: responseError,
   } = useMutation({
@@ -129,20 +92,38 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     handleAddMessages([
       { author: 'user', type: 'message', content: message, time: getTime() },
     ]);
-    await getResponse(message);
+    getResponse(message);
   };
 
   const flatListRef = useRef(null);
 
   useEffect(() => {
     // Automatyczne przewijanie do najnowszej wiadomości
-    flatListRef.current?.scrollToEnd({ animated: true });
+    const timeout = setTimeout(() => {
+      flatListRef.current?.scrollToEnd();
+    }, 50);
   }, [messages]);
+
+  useEffect(() => {
+    const scrollToBottom = Keyboard.addListener('keyboardDidShow', () => {
+      const timeout = setTimeout(() => {
+        flatListRef.current?.scrollToEnd();
+      }, 50);
+    });
+
+    return () => {
+      scrollToBottom.remove();
+    };
+  }, []);
 
   if (productIsPending && !!imageUri) return <LoadingScreen />;
 
   return (
-    <Animated.View style={{ flex: 1, transform: [{ translateY }] }}>
+    <KeyboardAvoidingView
+      className={'flex-1'}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={80}
+    >
       <FlatList
         ref={flatListRef}
         data={messages}
@@ -154,14 +135,13 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
           }
           return <ChatMessage key={message.index} message={message} />;
         }}
-        contentContainerClassName={'flex-1 gap-5 px-6 pt-6 justify-end'}
         className={'flex-1'}
-        scrollEnabled={true}
+        contentContainerClassName={'mt-auto gap-5 px-6 pt-6'}
       />
       <View className={'px-6 pb-6 pt-4'}>
         <ChatInput onSubmit={handleChatSubmit} />
       </View>
-    </Animated.View>
+    </KeyboardAvoidingView>
   );
 };
 
