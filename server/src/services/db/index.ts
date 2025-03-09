@@ -5,8 +5,8 @@ dotenv.config({ path: "../.env" });
 
 const ARANGO_URL =
   process.env.ARANGO_URL || "https://17c43fa12737.arangodb.cloud:8529";
-const ARANGO_DB = process.env.ARANGO_DB || "_system";
-const ARANGO_USERNAME = process.env.ARANGO_USERNAME || "root";
+const ARANGO_DB = process.env.ARANGO_DB_DATABASE || "revi";
+const ARANGO_USERNAME = process.env.ARANGO_USERNAME || ":role:app";
 const ARANGO_PASSWORD = process.env.ARANGO_DB_PASS;
 
 export const GRAPH_NAME = "AmazonReviews";

@@ -28,10 +28,10 @@ export const ChatScreen = () => {
 
   useEffect(() => {
     const setupImageUri = async () => {
-      if (!params.imageUri) return;
+      if (!imageUri) return;
       
       try {
-        const decoded = decodeURIComponent(params.imageUri);
+        const decoded = decodeURIComponent(imageUri);
         console.log('Decoded URI:', decoded);
         
         if (Platform.OS === 'android' || Platform.OS === 'ios') {
@@ -59,7 +59,7 @@ export const ChatScreen = () => {
     };
 
     setupImageUri();
-  }, [params.imageUri]);
+  }, [imageUri]);
 
 
   const { mutate: getProduct, isPending: getProductIsPending } = useMutation({
@@ -141,19 +141,17 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     };
   }, []);
 
-  if (getProductIsPending && !!imageUri) return <LoadingScreen />;
-
-    // Clean up temporary files when component unmounts
-    useEffect(() => {
-      return () => {
-        if (Platform.OS === 'android' && decodedImageUri && 
-            decodedImageUri.includes(FileSystem.documentDirectory)) {
-          console.log('Cleaning up temporary file:', decodedImageUri);
-          FileSystem.deleteAsync(decodedImageUri, { idempotent: true })
-            .catch(err => console.log('Error deleting temp file:', err));
-        }
-      };
-    }, [decodedImageUri]);
+  // Clean up temporary files when component unmounts
+  useEffect(() => {
+    return () => {
+      if (Platform.OS === 'android' && decodedImageUri && 
+          decodedImageUri.includes(FileSystem.documentDirectory)) {
+        console.log('Cleaning up temporary file:', decodedImageUri);
+        FileSystem.deleteAsync(decodedImageUri, { idempotent: true })
+          .catch(err => console.log('Error deleting temp file:', err));
+      }
+    };
+  }, [decodedImageUri]);
 
   return (
     <KeyboardAvoidingView
@@ -161,21 +159,27 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
       behavior={Platform.OS === 'ios' ? 'padding' : 'undefined'}
       keyboardVerticalOffset={100}
     >
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={({ item: message, index }) => {
-          if (message.type === 'product') {
-            return <ProductCard product={message.content} />;
-          }
-          return <ChatMessage message={message} />;
-        }}
-        className={'flex-1'}
-        contentContainerClassName={'mt-auto gap-5 px-6 pt-6'}
-      />
-      <View className={'px-6 pb-6 pt-4'}>
-        <ChatInput onSubmit={handleChatSubmit} />
-      </View>
+      {getProductIsPending && !!imageUri ? (
+        <LoadingScreen />
+      ) : (
+        <>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={({ item: message, index }) => {
+              if (message.type === 'product') {
+                return <ProductCard product={message.content} />;
+              }
+              return <ChatMessage message={message} />;
+            }}
+            className={'flex-1'}
+            contentContainerClassName={'mt-auto gap-5 px-6 pt-6'}
+          />
+          <View className={'px-6 pb-6 pt-4'}>
+            <ChatInput onSubmit={handleChatSubmit} />
+          </View>
+        </>
+      )}
     </KeyboardAvoidingView>
   );
 };
