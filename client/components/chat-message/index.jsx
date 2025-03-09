@@ -80,6 +80,5 @@ const styles = (author) =>
     body: {
       fontSize: 16,
       color: author === 'user' ? 'white' : 'black',
-      alignSelf: author === 'user' ? 'flex-end' : 'flex-start',
     },
   });

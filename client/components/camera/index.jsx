@@ -1,6 +1,6 @@
-import { Button, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { Button, Pressable, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { cssInterop } from 'nativewind';
 import { Icon } from '../ui/icon';
 import { MessageSquare } from 'lucide-react-native';
@@ -10,7 +10,6 @@ cssInterop(CameraView, {
 });
 
 export const Camera = ({ onTakePhoto, onSkipPhoto }) => {
-  const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
   const ref = useRef();
 
@@ -31,10 +30,6 @@ export const Camera = ({ onTakePhoto, onSkipPhoto }) => {
     );
   }
 
-  function toggleCameraFacing() {
-    setFacing((current) => (current === 'back' ? 'front' : 'back'));
-  }
-
   const handleTakePhoto = async () => {
     const photo = await ref.current?.takePictureAsync({ quality: 0.5 });
     await onTakePhoto(photo?.uri);
@@ -43,9 +38,9 @@ export const Camera = ({ onTakePhoto, onSkipPhoto }) => {
   return (
     <CameraView
       className={'flex-1 justify-end'}
-      facing={facing}
       mode={'picture'}
       ref={ref}
+      facing={'back'}
     >
       <View className={'absolute bottom-12 flex-row items-center'}>
         <Pressable
@@ -54,7 +49,7 @@ export const Camera = ({ onTakePhoto, onSkipPhoto }) => {
         >
           {({ pressed }) => (
             <View
-              className={`h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-transparent ${pressed ? 'opacity-50' : 'opacity-100'}`}
+              className={`h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-transparent ${pressed ? 'opacity-50' : 'opacity-85'}`}
             >
               <View className={'h-16 w-16 rounded-full bg-white'} />
             </View>
@@ -66,7 +61,7 @@ export const Camera = ({ onTakePhoto, onSkipPhoto }) => {
         >
           {({ pressed }) => (
             <View
-              className={`h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-transparent ${pressed ? 'opacity-50' : 'opacity-100'}`}
+              className={`h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-transparent ${pressed ? 'opacity-50' : 'opacity-85'}`}
             >
               <Icon
                 as={MessageSquare}
