@@ -84,11 +84,10 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
-  // initializeDatabase();
+  initializeDatabase();
   try {
     httpServer.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
-      console.log(`Upload directory: ${path.join(process.cwd(), 'uploads')}`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);

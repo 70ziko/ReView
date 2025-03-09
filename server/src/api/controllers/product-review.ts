@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { ProductResponse, RequestWithSession } from "../routes/types";
+import { RequestWithSession } from "../routes/types";
 import { chatProductAssistant, productCardAgent } from "../../lib/ai";
 
 const imageProcessHandler: RequestHandler = async (req, res) => {

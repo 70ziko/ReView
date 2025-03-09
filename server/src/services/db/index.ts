@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 
 const ARANGO_URL =
-  process.env.ARANGO_URL || "https://localhost:8529";
+  process.env.ARANGO_DB_URL || "https://localhost:8529";
 const ARANGO_DB = process.env.ARANGO_DB_DATABASE || "_system";
 const ARANGO_USERNAME = process.env.ARANGO_USERNAME || "root";
 const ARANGO_PASSWORD = process.env.ARANGO_DB_PASS;
@@ -24,14 +24,9 @@ export const db = new Database({
   databaseName: ARANGO_DB,
 });
 
-export const sanitizeKey = (key: string, allowSpaces = false): string => {
+export const sanitizeKey = (key: string): string => {
   if (!key) return "";
   key = String(key);
-  key = key.replace("/", "_").replace("\\", "_").replace(".", "_");
-
-  if (!allowSpaces) {
-    key = key.replace(/ /g, "_");
-  }
 
   // Replace all but alphanumeric characters, underscores, and hyphens with underscores
   key = key.replace(/[^a-zA-Z0-9_\-]/g, "_");
@@ -51,7 +46,7 @@ export const ensureCollectionsExist = async (): Promise<void> => {
       if (!exists) {
         throw new Error(`Required collection does not exist: ${collection}`);
       }
-      console.log(`Verified collection exists: ${collection}`);
+      console.debug(`Verified collection exists: ${collection}`);
     }
 
     for (const collection of COLLECTIONS.edges) {
@@ -59,7 +54,7 @@ export const ensureCollectionsExist = async (): Promise<void> => {
       if (!exists) {
         throw new Error(`Required edge collection does not exist: ${collection}`);
       }
-      console.log(`Verified edge collection exists: ${collection}`);
+      console.debug(`Verified edge collection exists: ${collection}`);
     }
   } catch (error) {
     console.error("Error verifying collections:", error);
