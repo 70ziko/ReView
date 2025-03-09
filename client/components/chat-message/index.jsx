@@ -2,6 +2,8 @@ import { Card } from '../ui/card';
 import { Text } from '../ui/text';
 import { tva } from '@gluestack-ui/nativewind-utils/tva';
 import { useEffect, useState } from 'react';
+import Markdown from 'react-native-markdown-display';
+import { StyleSheet } from 'react-native';
 
 export const ChatMessage = ({ typing, message: { author, time, content } }) => {
   const cardStyle = tva({
@@ -50,11 +52,34 @@ export const ChatMessage = ({ typing, message: { author, time, content } }) => {
           {dots}
         </Text>
       )}
-      {content && (
-        <Text size={'lg'} className={text()}>
-          {content}
-        </Text>
-      )}
+      {content && <Markdown style={styles(author)}>{content}</Markdown>}
     </Card>
   );
 };
+
+const styles = (author) =>
+  StyleSheet.create({
+    heading1: {
+      fontSize: 32,
+    },
+    heading2: {
+      fontSize: 26,
+    },
+    heading3: {
+      fontSize: 20,
+    },
+    heading4: {
+      fontSize: 18,
+    },
+    heading5: {
+      fontSize: 15,
+    },
+    heading6: {
+      fontSize: 13,
+    },
+    body: {
+      fontSize: 16,
+      color: author === 'user' ? 'white' : 'black',
+      alignSelf: author === 'user' ? 'flex-end' : 'flex-start',
+    },
+  });
