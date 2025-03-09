@@ -4,9 +4,9 @@ import dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 
 const ARANGO_URL =
-  process.env.ARANGO_URL || "https://17c43fa12737.arangodb.cloud:8529";
-const ARANGO_DB = process.env.ARANGO_DB_DATABASE || "revi";
-const ARANGO_USERNAME = process.env.ARANGO_USERNAME || ":role:app";
+  process.env.ARANGO_URL || "https://localhost:8529";
+const ARANGO_DB = process.env.ARANGO_DB_DATABASE || "_system";
+const ARANGO_USERNAME = process.env.ARANGO_USERNAME || "root";
 const ARANGO_PASSWORD = process.env.ARANGO_DB_PASS;
 
 export const GRAPH_NAME = "AmazonReviews";
@@ -48,87 +48,21 @@ export const ensureCollectionsExist = async (): Promise<void> => {
   try {
     for (const collection of COLLECTIONS.nodes) {
       const exists = await db.collection(collection).exists();
-
       if (!exists) {
-        await db.createCollection(collection);
-        console.log(`Created collection: ${collection}`);
-
-        if (collection === "Products") {
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["_key"],
-            unique: true,
-          });
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["main_category"],
-            unique: false,
-          });
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["parent_asin"],
-            unique: false,
-          });
-          console.log(`Created indexes for ${collection}`);
-        } else if (collection === "Reviews") {
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["asin"],
-            unique: false,
-          });
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["user_id"],
-            unique: false,
-          });
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["timestamp"],
-            unique: false,
-          });
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["rating"],
-            unique: false,
-          });
-          console.log(`Created indexes for ${collection}`);
-        } else if (collection === "Users") {
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["_key"],
-            unique: true,
-          });
-          console.log(`Created indexes for ${collection}`);
-        } else if (collection === "Categories") {
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["_key"],
-            unique: true,
-          });
-          await db.collection(collection).ensureIndex({
-            type: "persistent",
-            fields: ["level"],
-            unique: false,
-          });
-          console.log(`Created indexes for ${collection}`);
-        }
-      } else {
-        console.log(`Collection already exists: ${collection}`);
+        throw new Error(`Required collection does not exist: ${collection}`);
       }
+      console.log(`Verified collection exists: ${collection}`);
     }
 
     for (const collection of COLLECTIONS.edges) {
       const exists = await db.collection(collection).exists();
-
       if (!exists) {
-        await db.createEdgeCollection(collection);
-        console.log(`Created edge collection: ${collection}`);
-      } else {
-        console.log(`Edge collection already exists: ${collection}`);
+        throw new Error(`Required edge collection does not exist: ${collection}`);
       }
+      console.log(`Verified edge collection exists: ${collection}`);
     }
   } catch (error) {
-    console.error("Error ensuring collections exist:", error);
+    console.error("Error verifying collections:", error);
     throw error;
   }
 };
@@ -136,37 +70,12 @@ export const ensureCollectionsExist = async (): Promise<void> => {
 export const ensureGraphExists = async (): Promise<void> => {
   try {
     const graphExists = await db.graph(GRAPH_NAME).exists();
-
     if (!graphExists) {
-      await db.createGraph(GRAPH_NAME, [
-        {
-          collection: "HasReview",
-          from: ["Products"],
-          to: ["Reviews"],
-        },
-        {
-          collection: "WrittenBy",
-          from: ["Reviews"],
-          to: ["Users"],
-        },
-        {
-          collection: "BelongsToCategory",
-          from: ["Products"],
-          to: ["Categories"],
-        },
-        {
-          collection: "VariantOf",
-          from: ["Products"],
-          to: ["Products"],
-        },
-      ]);
-
-      console.log(`Created graph: ${GRAPH_NAME}`);
-    } else {
-      console.log(`Graph already exists: ${GRAPH_NAME}`);
+      throw new Error(`Required graph does not exist: ${GRAPH_NAME}`);
     }
+    console.log(`Verified graph exists: ${GRAPH_NAME}`);
   } catch (error) {
-    console.error("Error ensuring graph exists:", error);
+    console.error("Error verifying graph exists:", error);
     throw error;
   }
 };
@@ -175,9 +84,9 @@ export const initializeDatabase = async (): Promise<void> => {
   try {
     await ensureCollectionsExist();
     await ensureGraphExists();
-    console.log("Database initialization complete");
+    console.log("Database verification complete");
   } catch (error) {
-    console.error("Database initialization failed:", error);
+    console.error("Database verification failed:", error);
     throw error;
   }
 };

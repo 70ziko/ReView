@@ -31,6 +31,7 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
       JSON.stringify(imageData.buffer)
     );
     
+    console.debug('AI response:', response);
     console.info('AI processing complete, parsing response');
     
     const parsedResponse = JSON.parse(response as string);
@@ -60,7 +61,6 @@ const imageProcessHandler: RequestHandler = async (req, res) => {
   }
 };
 
-// Keep the prompt processor unchanged
 const promptProcessHandler: RequestHandler = async (req, res) => {
   const request = req as RequestWithSession;
   try {
@@ -72,39 +72,21 @@ const promptProcessHandler: RequestHandler = async (req, res) => {
     }
 
     await chatProductAssistant.clearHistory(request.session.userId);
-
-    const dummyResponse: ProductResponse = {
-      product_name: "Smart Home Security Camera",
-      score: 4,
-      image_url: "https://example.com/images/security-camera.jpg",
-      general_review:
-        "High-definition security camera with motion detection and night vision. Easy to set up with smartphone integration. Some users report occasional connectivity issues.",
-      amazon_reviews_ref: "https://amazon.com/product/789012/reviews",
-      alternatives: [
-        {
-          name: "Budget Security Camera",
-          product_id: "SC34567",
-          score: 3,
-        },
-        {
-          name: "Premium Doorbell Camera",
-          product_id: "DC12345",
-          score: 5,
-        },
-      ],
-      prices: {
-        min: 119.99,
-        avg: 149.99,
-      },
-      product_id: "SC56789",
-      category: "Electronics/SmartHome/Security",
-    };
-
+    const response = await productCardAgent.processMessage(
+      prompt, 
+    );
+    
+    console.debug('AI response:', response);
+    console.info('AI processing complete, parsing response');
+    
+    const parsedResponse = JSON.parse(response as string);
+    
+    await chatProductAssistant.clearHistory(request.session.userId);
     await chatProductAssistant.initializeChat(
       request.session.userId,
-      dummyResponse
+      parsedResponse
     );
-    res.json(dummyResponse);
+    res.json(response);
   } catch (error) {
     console.error("Error processing prompt:", error);
     res.status(500).json({ error: "Failed to process prompt" });

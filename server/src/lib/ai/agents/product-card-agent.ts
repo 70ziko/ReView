@@ -90,10 +90,14 @@ export class ProductCardAgent {
       if (callback) {
         // Streaming mode isn't directly supported with function calling
         // We'll need to handle it differently
+
+        const enhancedMessage = `Use the the tools available to you to research the graphRAG database and internet in order to provide the user with relevant information about the product.
+        \n User's request: \n\n${message}`;
+
         let result = await this.llm.invoke(
           [
             { role: "system", content: ASSISTANT_SYSTEM_MESSAGE },
-            { role: "user", content: message },
+            { role: "user", content: enhancedMessage },
           ],
           {
             callbacks: [
