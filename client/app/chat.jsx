@@ -29,15 +29,15 @@ export const ChatScreen = () => {
   useEffect(() => {
     const setupImageUri = async () => {
       if (!imageUri) return;
-      
+
       try {
         const decoded = decodeURIComponent(imageUri);
         console.log('Decoded URI:', decoded);
-        
+
         if (Platform.OS === 'android' || Platform.OS === 'ios') {
           const fileInfo = await FileSystem.getInfoAsync(decoded);
           console.log('File exists check:', fileInfo);
-          
+
           if (!fileInfo.exists) {
             console.error('Image file does not exist after decoding URI');
             handleToast({
@@ -47,7 +47,7 @@ export const ChatScreen = () => {
             return;
           }
         }
-        
+
         setDecodedImageUri(decoded);
       } catch (error) {
         console.error('Error processing image URI:', error);
@@ -60,7 +60,6 @@ export const ChatScreen = () => {
 
     setupImageUri();
   }, [imageUri]);
-
 
   const { mutate: getProduct, isPending: getProductIsPending } = useMutation({
     mutationFn: (imageUri) => processImage(imageUri),
@@ -108,7 +107,7 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
         action: 'error',
         message: 'Błąd pobierania odpowiedzi',
       });
-    }
+    },
   });
 
   const handleAddMessages = (messagesToAdd) => {
@@ -122,19 +121,28 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
     getResponse(message);
   };
 
-  useEffect(() => {
-    // Automatyczne przewijanie do najnowszej wiadomości
+  const scrollToBottomWithTimeout = () => {
     const timeout = setTimeout(() => {
       flatListRef.current?.scrollToEnd();
     }, 50);
+  };
+
+  useEffect(() => {
+    // Automatyczne przewijanie do najnowszej wiadomości
+    scrollToBottomWithTimeout();
   }, [messages]);
 
   useEffect(() => {
-    const scrollToBottom = Keyboard.addListener('keyboardDidShow', () => {
-      const timeout = setTimeout(() => {
-        flatListRef.current?.scrollToEnd();
-      }, 50);
-    });
+    if (getResponseIsPending) {
+      scrollToBottomWithTimeout();
+    }
+  }, [getResponseIsPending]);
+
+  useEffect(() => {
+    const scrollToBottom = Keyboard.addListener(
+      'keyboardDidShow',
+      scrollToBottomWithTimeout
+    );
 
     return () => {
       scrollToBottom.remove();
@@ -144,11 +152,15 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
   // Clean up temporary files when component unmounts
   useEffect(() => {
     return () => {
-      if (Platform.OS === 'android' && decodedImageUri && 
-          decodedImageUri.includes(FileSystem.documentDirectory)) {
+      if (
+        Platform.OS === 'android' &&
+        decodedImageUri &&
+        decodedImageUri.includes(FileSystem.documentDirectory)
+      ) {
         console.log('Cleaning up temporary file:', decodedImageUri);
-        FileSystem.deleteAsync(decodedImageUri, { idempotent: true })
-          .catch(err => console.log('Error deleting temp file:', err));
+        FileSystem.deleteAsync(decodedImageUri, { idempotent: true }).catch(
+          (err) => console.log('Error deleting temp file:', err)
+        );
       }
     };
   }, [decodedImageUri]);
@@ -173,7 +185,14 @@ ${data.alternatives.map((a) => `- ${a.name}`).join('\n')}`,
               return <ChatMessage message={message} />;
             }}
             className={'flex-1'}
-            contentContainerClassName={'mt-auto gap-5 px-6 pt-6'}
+            contentContainerClassName={'gap-5 px-6 pt-6'}
+            ListFooterComponent={() => {
+              return (
+                getResponseIsPending && (
+                  <ChatMessage typing message={{ author: 'bot' }} />
+                )
+              );
+            }}
           />
           <View className={'px-6 pb-6 pt-4'}>
             <ChatInput onSubmit={handleChatSubmit} />
