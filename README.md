@@ -29,7 +29,7 @@ The system follows a client-server architecture with the following components:
 
 - **Backend**: Node.js with Express
 - **Database**: ArangoDB (graph database)
-- **AI Models**: OpenAI GPT-4o
+- **AI Models**: OpenAI GPT-4o-mini
 - **Vector Embeddings**: OpenAI Embeddings API
 - **Image Recognition**: Google Lens API
 - **TypeScript**: For type-safe code

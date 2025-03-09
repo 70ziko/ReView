@@ -14,7 +14,7 @@ import { MessageContent } from "@langchain/core/messages";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { convertToOpenAIFunction } from "@langchain/core/utils/function_calling";
 
-import { createRagTools } from "../tools/rag-tools.js";
+// import { createRagTools } from "../tools/rag-tools.js";
 import { createGraphTools } from "../tools/graph-tools.js";
 import { createSearchTools } from "../tools/search-tools.js";
 import { productCardSchema } from "../schemas/product-card-schema.js";
@@ -41,7 +41,7 @@ export class ProductCardAgent {
     };
 
     this.tools = [
-      ...createRagTools(toolDeps),
+      // ...createRagTools(toolDeps),
       ...createGraphTools(toolDeps),
       ...createSearchTools(toolDeps),
     ];
