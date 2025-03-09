@@ -37,7 +37,6 @@ export const Camera = ({ onTakePhoto, onSkipPhoto }) => {
 
   const handleTakePhoto = async () => {
     const photo = await ref.current?.takePictureAsync({ quality: 0.5 });
-    console.log(photo);
     await onTakePhoto(photo?.uri);
   };
 
