@@ -14,7 +14,6 @@ import { MessageContent } from "@langchain/core/messages";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { convertToOpenAIFunction } from "@langchain/core/utils/function_calling";
 
-// import { createRagTools } from "../tools/rag-tools.js";
 import { createGraphTools } from "../tools/graph-tools.js";
 import { createSearchTools } from "../tools/search-tools.js";
 import { productCardSchema } from "../schemas/product-card-schema.js";
@@ -27,6 +26,7 @@ export class ProductCardAgent {
   private chain: RunnableSequence;
   private tools: LangTools;
   private embeddingsModel: OpenAIEmbeddings;
+  private graphTools: LangTools;
 
   constructor() {
     this.llm = new ChatOpenAI({
@@ -40,9 +40,10 @@ export class ProductCardAgent {
       embeddingsModel: this.embeddingsModel,
     };
 
+    this.graphTools = createGraphTools(toolDeps);
+    
     this.tools = [
-      // ...createRagTools(toolDeps),
-      ...createGraphTools(toolDeps),
+      ...this.graphTools,
       ...createSearchTools(toolDeps),
     ];
 
@@ -78,6 +79,55 @@ export class ProductCardAgent {
   }
 
   /**
+   * Try to extract a product name from user input
+   */
+  private extractProductName(input: string): string | null {
+    // Simple regex-based extraction without LLM
+    const regex = /(?:about|information on|info on|details on|what is|tell me about|product card for)\s+([^?.!,;:]+)/i;
+    const match = input.match(regex);
+    
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    
+    // Check if input might be a direct product name (less than 5 words)
+    const wordCount = input.split(/\s+/).length;
+    if (wordCount < 5) {
+      return input.trim();
+    }
+    
+    return null;
+  }
+
+  /**
+   * Try to find a product by name using the graph tools
+   */
+  private async findProductByName(productName: string): Promise<any> {
+    try {
+      const findProductTool = this.graphTools.find(
+        tool => tool.name === "find_product_by_name"
+      );
+      
+      if (!findProductTool) {
+        console.warn("find_product_by_name tool not found");
+        return null;
+      }
+      
+      const result = await findProductTool.invoke(productName);
+      
+      try {
+        return JSON.parse(result);
+      } catch (e) {
+        console.error("Error parsing product search result", e);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error finding product by name:", error);
+      return null;
+    }
+  }
+
+  /**
    * Process a user message and return a response
    * @param message The user's message
    * @param callback Optional callback function for streaming responses
@@ -87,14 +137,21 @@ export class ProductCardAgent {
     callback?: (chunk: string) => void
   ): Promise<MessageContent> {
     try {
+      const productName = this.extractProductName(message);
+      
+      let productInfo = null;
+      if (productName) {
+        productInfo = await this.findProductByName(productName);
+      }
+      
+      let enhancedMessage = message;
+      if (productInfo && !productInfo.error) {
+        enhancedMessage = `${message}\n\nProduct information: ${JSON.stringify(productInfo)}`;
+      }
+
       if (callback) {
-        // Streaming mode isn't directly supported with function calling
-        // We'll need to handle it differently
-
-        const enhancedMessage = `Use the the tools available to you to research the graphRAG database and internet in order to provide the user with relevant information about the product.
-        \n User's request: \n\n${message}`;
-
-        let result = await this.llm.invoke(
+        // Streaming mode
+        const result = await this.llm.invoke(
           [
             { role: "system", content: ASSISTANT_SYSTEM_MESSAGE },
             { role: "user", content: enhancedMessage },
@@ -112,8 +169,8 @@ export class ProductCardAgent {
 
         return result.content;
       } else {
-        // Non-streaming mode
-        const result = await this.chain.invoke({ input: message });
+        // Non-streaming mode with automatic product lookup
+        const result = await this.chain.invoke({ input: enhancedMessage });
         return JSON.stringify(result);
       }
     } catch (error) {
@@ -146,25 +203,43 @@ export class ProductCardAgent {
     callback?: (chunk: string) => void
   ): Promise<MessageContent> {
     try {
+      let productInfo = null;
+      let enhancedMessage = message;
+      
+      if (message) {
+        const productName = this.extractProductName(message);
+        if (productName) {
+          productInfo = await this.findProductByName(productName);
+        }
+      }
+
       if (imageData) {
         try {
           const googleLensInput = {
             base64: imageData,
-          }
-          console.debug("Google Lens input in agent:", googleLensInput);
+          };
+          // console.debug("Google Lens input in agent:", googleLensInput);
           const lensResults = await serpGoogleLens(googleLensInput);
-          console.debug("Google Lens results:", lensResults);
+          // console.debug("Google Lens results:", lensResults);
 
-          const enhancedMessage = `${message}\n\n
-          Use the following Google lens output for researching and constructing a response: ${JSON.stringify(lensResults)}`;
+          if (lensResults && lensResults.visualMatches && lensResults.visualMatches.length > 0 && !productInfo) {
+            const topMatch = lensResults.visualMatches[0];
+            if (topMatch.title) {
+              productInfo = await this.findProductByName(topMatch.title);
+            }
+          }
 
-          return this.processMessage(enhancedMessage, callback);
+          enhancedMessage = `${enhancedMessage}\n\nGoogle Lens results: ${JSON.stringify(lensResults)}`;
         } catch (error) {
           console.error("Error using google_lens tool:", error);
         }
       }
+      
+      if (productInfo && !productInfo.error) {
+        enhancedMessage = `${enhancedMessage}\n\nProduct information: ${JSON.stringify(productInfo)}`;
+      }
 
-      return this.processMessage(message, callback);
+      return this.processMessage(enhancedMessage, callback);
     } catch (error) {
       console.error("Error processing message with image:", error);
       return JSON.stringify({
