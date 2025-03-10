@@ -70,9 +70,9 @@ async function findByVectorReviewSimilarity(
         // Find products with reviews similar to user requirements
         const reviewMatchQuery = `
             FOR review IN Reviews
-                SEARCH ANALYZER(VECTOR_DISTANCE(review.embedding, @embedding) < 0.3, "vector")
+                SEARCH ANALYZER(COSINE_SIMILARITY(review.embedding, @embedding) < 0.3, "vector")
                 FILTER review.rating >= @min_rating
-                SORT VECTOR_DISTANCE(review.embedding, @embedding) ASC
+                SORT COSINE_SIMILARITY(review.embedding, @embedding) ASC
                 LIMIT 20
                 FOR product IN Products
                     FILTER product.parent_asin == review.parent_asin
@@ -111,10 +111,10 @@ async function findByVectorReviewSimilarity(
             const product = reviewMatches[i];
             const matchingReviewsQuery = `
                 FOR review IN Reviews
-                    SEARCH ANALYZER(VECTOR_DISTANCE(review.embedding, @embedding) < 0.3, "vector")
+                    SEARCH ANALYZER(APPROX_NEAR_COSINE(review.embedding, @embedding) < 0.3, "vector")
                     FOR p IN Products
                         FILTER p._id == @product_id AND p.parent_asin == review.parent_asin
-                        SORT VECTOR_DISTANCE(review.embedding, @embedding) ASC
+                        SORT APPROX_NEAR_COSINE(review.embedding, @embedding) ASC
                         LIMIT 3
                         RETURN {
                             rating: review.rating,
@@ -175,10 +175,10 @@ async function findByVectorProductSimilarity(
         // Try product description/features vector similarity
         const productMatchQuery = `
             FOR product IN Products
-                SEARCH ANALYZER(VECTOR_DISTANCE(product.embedding, @embedding) < 0.3, "vector")
+                SEARCH ANALYZER(APPROX_NEAR_COSINE(product.embedding, @embedding) < 0.3, "vector")
                 FILTER product.average_rating >= @min_rating
                 ${categoryFilter}
-                SORT VECTOR_DISTANCE(product.embedding, @embedding) ASC
+                SORT APPROX_NEAR_COSINE(product.embedding, @embedding) ASC
                 LIMIT @limit
                 RETURN {
                     product_id: product._id,

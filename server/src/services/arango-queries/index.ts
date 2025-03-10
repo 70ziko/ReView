@@ -302,7 +302,7 @@ export async function getProductReviewsSummary(input: GetProductReviewsSummaryIn
     }
     
     const filterClause = product_id ? 
-      "FILTER product._id == @product_id" : 
+      "FILTER product._key == @product_id" : 
       "FILTER product.parent_asin == @asin";
     
     // Get product details
@@ -311,7 +311,6 @@ export async function getProductReviewsSummary(input: GetProductReviewsSummaryIn
         ${filterClause}
         LIMIT 1
         RETURN {
-          product_id: product._id,
           asin: product.parent_asin,
           title: product.title,
           average_rating: product.average_rating,

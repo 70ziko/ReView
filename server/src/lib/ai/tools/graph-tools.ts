@@ -2,7 +2,6 @@ import { DynamicStructuredTool, DynamicTool } from "langchain/tools";
 import { z } from "zod";
 import { LangTools, ToolDependencies } from "./types.js";
 import { 
-  // getDbSchema, 
   findProductByName, 
   getPopularProducts, 
   getBestRatedProducts,
@@ -19,12 +18,6 @@ export function createGraphTools(
   _dependencies: ToolDependencies
 ): LangTools {
   return [
-    // new DynamicTool({
-    //   name: "get_db_schema",
-    //   description: "Gets the schema of the database.",
-    //   func: getDbSchema,
-    // }),
-    
     new DynamicTool({
       name: "find_product_by_name",
       description: "Finds products by name or partial name match and retrieves helpful reviews. Use this to get detailed information about a specific product including its reviews.",

@@ -206,12 +206,12 @@ export class ProductCardAgent {
       let productInfo = null;
       let enhancedMessage = message;
       
-      if (message) {
-        const productName = this.extractProductName(message);
-        if (productName) {
-          productInfo = await this.findProductByName(productName);
-        }
-      }
+      // if (message) {
+      //   const productName = this.extractProductName(message);
+      //   if (productName) {
+      //     productInfo = await this.findProductByName(productName);
+      //   }
+      // }
 
       if (imageData) {
         try {
@@ -222,12 +222,12 @@ export class ProductCardAgent {
           const lensResults = await serpGoogleLens(googleLensInput);
           // console.debug("Google Lens results:", lensResults);
 
-          if (lensResults && lensResults.visualMatches && lensResults.visualMatches.length > 0 && !productInfo) {
-            const topMatch = lensResults.visualMatches[0];
-            if (topMatch.title) {
-              productInfo = await this.findProductByName(topMatch.title);
-            }
-          }
+          // if (lensResults && lensResults.visualMatches && lensResults.visualMatches.length > 0 && !productInfo) {
+          //   const topMatch = lensResults.visualMatches[0];
+          //   if (topMatch.title) {
+          //     productInfo = await this.findProductByName(topMatch.title);
+          //   }
+          // }
 
           enhancedMessage = `${enhancedMessage}\n\nGoogle Lens results: ${JSON.stringify(lensResults)}`;
         } catch (error) {
@@ -235,9 +235,9 @@ export class ProductCardAgent {
         }
       }
       
-      if (productInfo && !productInfo.error) {
-        enhancedMessage = `${enhancedMessage}\n\nProduct information: ${JSON.stringify(productInfo)}`;
-      }
+      // if (productInfo && !productInfo.error) {
+      //   enhancedMessage = `${enhancedMessage}\n\nProduct information: ${JSON.stringify(productInfo)}`;
+      // }
 
       return this.processMessage(enhancedMessage, callback);
     } catch (error) {
