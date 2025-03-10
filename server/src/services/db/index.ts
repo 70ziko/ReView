@@ -3,11 +3,12 @@ import dotenv from "dotenv";
 
 dotenv.config({ path: "../.env" });
 
-const ARANGO_URL =
-  process.env.ARANGO_DB_URL || "https://localhost:8529";
+
+const ARANGO_URL = process.env.ARANGO_DB_URL || "http://localhost:8529";
 const ARANGO_DB = process.env.ARANGO_DB_DATABASE || "_system";
-const ARANGO_USERNAME = process.env.ARANGO_USERNAME || "root";
+const ARANGO_USERNAME = process.env.ARANGO_DB_USER || "root";
 const ARANGO_PASSWORD = process.env.ARANGO_DB_PASS;
+
 
 export const GRAPH_NAME = "AmazonReviews";
 export const COLLECTIONS = {

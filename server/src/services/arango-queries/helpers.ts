@@ -23,7 +23,7 @@ function extractKeywords(text: string): string[] {
 }
 
 /**
- * Build category filter for AQL queries
+ * Build category filter for AQL queries 
  */
 function buildCategoryFilter(category?: string): { filter: string, hasCategory: boolean } {
     if (!category || category.trim() === "") {
@@ -75,7 +75,7 @@ async function findByVectorReviewSimilarity(
                 SORT COSINE_SIMILARITY(review.embedding, @embedding) ASC
                 LIMIT 20
                 FOR product IN Products
-                    FILTER product.parent_asin == review.parent_asin
+                    FILTER product.parent_asin == review.parent_asin OR product.parent_asin == review.asin
                     ${categoryFilter}
                     COLLECT product_id = product._id, 
                             title = product.title,
@@ -111,10 +111,10 @@ async function findByVectorReviewSimilarity(
             const product = reviewMatches[i];
             const matchingReviewsQuery = `
                 FOR review IN Reviews
-                    SEARCH ANALYZER(APPROX_NEAR_COSINE(review.embedding, @embedding) < 0.3, "vector")
+                    SEARCH ANALYZER(COSINE_SIMILARITY(review.embedding, @embedding) < 0.3, "vector")
                     FOR p IN Products
-                        FILTER p._id == @product_id AND p.parent_asin == review.parent_asin
-                        SORT APPROX_NEAR_COSINE(review.embedding, @embedding) ASC
+                        FILTER p._id == @product_id AND (p.parent_asin == review.parent_asin OR p.parent_asin == review.asin)
+                        SORT COSINE_SIMILARITY(review.embedding, @embedding) ASC
                         LIMIT 3
                         RETURN {
                             rating: review.rating,
@@ -175,10 +175,10 @@ async function findByVectorProductSimilarity(
         // Try product description/features vector similarity
         const productMatchQuery = `
             FOR product IN Products
-                SEARCH ANALYZER(APPROX_NEAR_COSINE(product.embedding, @embedding) < 0.3, "vector")
+                SEARCH ANALYZER(COSINE_SIMILARITY(product.embedding, @embedding) < 0.3, "vector")
                 FILTER product.average_rating >= @min_rating
                 ${categoryFilter}
-                SORT APPROX_NEAR_COSINE(product.embedding, @embedding) ASC
+                SORT COSINE_SIMILARITY(product.embedding, @embedding) ASC
                 LIMIT @limit
                 RETURN {
                     product_id: product._id,
@@ -252,7 +252,7 @@ async function findByKeywordReviewMatch(
             FOR review IN Reviews
                 FILTER (${keywordConditionStr}) AND review.rating >= @min_rating
                 FOR product IN Products
-                    FILTER product.parent_asin == review.parent_asin
+                    FILTER product.parent_asin == review.parent_asin OR product.parent_asin == review.asin
                     ${categoryFilter}
                     COLLECT product_id = product._id, 
                             title = product.title,

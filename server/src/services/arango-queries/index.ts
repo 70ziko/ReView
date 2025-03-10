@@ -78,10 +78,17 @@ export async function findProductByName(productName: string): Promise<string> {
       }
     }
     
-    // Get helpful reviews for the best match product
+    if (products.length === 0) {
+      return JSON.stringify({
+        message: "No products found matching the name",
+        products: []
+      });
+    }
+    
+    // Get helpful reviews for the best match product with enhanced ASIN matching
     const reviews = await executeAqlQuery(`
       FOR review IN Reviews
-        FILTER review.parent_asin == @asin
+        FILTER review.parent_asin == @asin OR review.asin == @asin
         SORT review.helpful_votes DESC, review.rating DESC
         LIMIT 10
         RETURN {
@@ -92,7 +99,7 @@ export async function findProductByName(productName: string): Promise<string> {
           verified_purchase: review.verified_purchase
         }
     `, { asin: products[0].asin });
-    
+
     return JSON.stringify({
       product: products[0],
       reviews,
@@ -255,8 +262,8 @@ export async function findProductByDescription(description: string): Promise<str
     // Use vector search in ArangoDB
     const products = await executeAqlQuery(`
       FOR product IN Products
-        SEARCH ANALYZER(VECTOR_DISTANCE(product.embedding, @embedding) < 0.3, "vector")
-        SORT VECTOR_DISTANCE(product.embedding, @embedding) ASC
+        SEARCH ANALYZER(COSINE_SIMILARITY(product.embedding, @embedding) < 0.3, "vector")
+        SORT COSINE_SIMILARITY(product.embedding, @embedding) ASC
         LIMIT 5
         RETURN {
           product_id: product._id,
@@ -266,7 +273,7 @@ export async function findProductByDescription(description: string): Promise<str
           price: product.price,
           average_rating: product.average_rating,
           rating_count: product.rating_count,
-          vector_score: VECTOR_DISTANCE(product.embedding, @embedding)
+          vector_score: COSINE_SIMILARITY(product.embedding, @embedding)
         }
     `, { embedding });
     
@@ -324,11 +331,11 @@ export async function getProductReviewsSummary(input: GetProductReviewsSummaryIn
     
     const product = products[0];
     
-    // Get reviews and distribution
+    // Get reviews and distribution with enhanced ASIN matching
     const [reviews, ratings] = await Promise.all([
       executeAqlQuery(`
         FOR review IN Reviews
-          FILTER review.parent_asin == @asin
+          FILTER review.parent_asin == @asin OR review.asin == @asin
           SORT review.helpful_votes DESC, review.rating DESC
           LIMIT @limit
           RETURN {
@@ -342,7 +349,7 @@ export async function getProductReviewsSummary(input: GetProductReviewsSummaryIn
       
       executeAqlQuery(`
         FOR review IN Reviews
-          FILTER review.parent_asin == @asin
+          FILTER review.parent_asin == @asin OR review.asin == @asin
           COLLECT rating = review.rating WITH COUNT INTO count
           SORT rating DESC
           RETURN {

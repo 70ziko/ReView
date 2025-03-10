@@ -84,8 +84,11 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
-  initializeDatabase();
   try {
+    // Initialize database first
+    await initializeDatabase();
+    
+    // Start server only after database is initialized
     httpServer.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
