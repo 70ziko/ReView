@@ -6,11 +6,11 @@ import {
   getPopularProducts, 
   getBestRatedProducts,
   findProductByDescription,
-  getProductReviewsSummary,
+  getProductReviewsDetails,
   findProductsByUserRequirements,
   GetPopularProductsInput,
   GetBestRatedProductsInput,
-  GetProductReviewsSummaryInput,
+  GetProductReviewsDetailsInput,
   FindProductsByUserRequirementsInput
 } from "../../../services/arango-queries";
 
@@ -52,18 +52,18 @@ export function createGraphTools(
     }),
 
     new DynamicStructuredTool({
-      name: "get_product_reviews_summary",
-      description: "Gets a summary of reviews for a specific product by ASIN or product ID.",
+      name: "get_product_reviews_details",
+      description: "Gets the most helpful reviews for the product and a rating distirbution. Use this to get insights into a product's reviews and ratings.",
       schema: z.object({
-        product_id: z.string().optional().describe("Product ID to get reviews for"),
-        asin: z.string().optional().describe("Product ASIN to get reviews for"),
-        limit: z.number().optional().default(10).describe("Maximum number of reviews to return")
+        product_id: z.string().describe("Product ID to get reviews for"),
+        limit: z.number().optional().default(5).describe("Maximum number of reviews to return") 
       }),
-      func: async (input: GetProductReviewsSummaryInput) => getProductReviewsSummary(input),
+      func: async (input: GetProductReviewsDetailsInput) => 
+        getProductReviewsDetails(input),
     }),
-    
+
     new DynamicStructuredTool({
-      name: "find_products_by_user_requirements",
+      name: "find_products_by_user_requirements_using_example_review",
       description: "Finds products that match specific user requirements or preferences expressed as an example review. Use this when the user has specific needs or is looking for recommendations based on particular criteria.",
       schema: z.object({
         example_review: z.string().describe("Example review or user requirements in natural language"),

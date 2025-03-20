@@ -3,7 +3,7 @@ import { EMBEDDINGS_CONFIG } from "../../lib/ai/agents/constants.js";
 import {
   executeAqlQuery
 } from "../db/index.js";
-import { buildCategoryFilter, extractKeywords, findBestRatedProducts, findByKeywordProductMatch, findByKeywordReviewMatch, findByVectorProductSimilarity, findByVectorReviewSimilarity } from "./helpers.js";
+import { buildCategoryFilter, findBestRatedProducts, findByVectorProductSimilarity, findByVectorReviewSimilarity } from "./helpers.js";
 
 // Initialize OpenAI embeddings with config
 const embeddings = new OpenAIEmbeddings(EMBEDDINGS_CONFIG);
@@ -22,7 +22,7 @@ export interface GetBestRatedProductsInput {
   min_reviews?: number;
 }
 
-export interface GetProductReviewsSummaryInput {
+export interface GetProductReviewsDetailsInput {
   product_id?: string;
   asin?: string;
   limit?: number;
@@ -67,12 +67,16 @@ export async function findProductByName(productName: string): Promise<string> {
     `, { productName });
     
     if (products.length === 0) {
-      const similarity = await findByVectorProductSimilarity(await embeddings.embedQuery(productName), '', { 
-        example_review: productName, 
-        min_rating: 0, 
-        limit: 5 
-      });
-      
+      const similarity = await findByVectorProductSimilarity(
+        await embeddings.embedQuery(productName),
+        "",
+        {
+          product_description: productName,
+          min_rating: 0,
+          limit: 5,
+        }
+      );
+
       if (similarity.success && similarity.result) {
         products = JSON.parse(similarity.result).products || [];
       }
@@ -85,7 +89,7 @@ export async function findProductByName(productName: string): Promise<string> {
       });
     }
     
-    // Get helpful reviews for the best match product with enhanced ASIN matching
+    // Enrich the response with helpful reviews
     const reviews = await executeAqlQuery(`
       FOR review IN Reviews
         FILTER review.parent_asin == @asin OR review.asin == @asin
@@ -299,7 +303,7 @@ export async function findProductByDescription(description: string): Promise<str
 /**
  * Get a summary of reviews for a specific product
  */
-export async function getProductReviewsSummary(input: GetProductReviewsSummaryInput): Promise<string> {
+export async function getProductReviewsDetails(input: GetProductReviewsDetailsInput): Promise<string> {
   console.debug('Getting product reviews summary:', input);
   try {
     const { product_id, asin, limit = 10 } = input;
@@ -413,41 +417,20 @@ export async function findProductsByUserRequirements(input: FindProductsByUserRe
               return reviewSearchResult.result!;
           }
 
-          const productSearchResult = await findByVectorProductSimilarity(
+            const productSearchResult = await findByVectorProductSimilarity(
               embedding,
               categoryFilter.filter,
-              params
-          );
+              {
+                ...params,
+                product_description: params.example_review
+              }
+            );
 
           if (productSearchResult.success) {
               return productSearchResult.result!;
           }
       } catch (vectorError) {
           console.warn("Vector search failed, falling back to keyword search:", vectorError);
-      }
-
-      const keywords = extractKeywords(example_review);
-
-      // Try keyword search on reviews
-      const keywordReviewResult = await findByKeywordReviewMatch(
-          keywords,
-          categoryFilter.filter,
-          params
-      );
-
-      if (keywordReviewResult.success) {
-          return keywordReviewResult.result!;
-      }
-
-      // Try keyword search on product descriptions
-      const keywordProductResult = await findByKeywordProductMatch(
-          keywords,
-          categoryFilter.filter,
-          params
-      );
-
-      if (keywordProductResult.success) {
-          return keywordProductResult.result!;
       }
 
       // Fallback to best rated products
@@ -475,78 +458,3 @@ export async function findProductsByUserRequirements(input: FindProductsByUserRe
       });
   }
 }
-
-
-// /**
-//  * Find products based on user requirements in natural language
-//  */
-// export async function findProductsByUserRequirements(input: FindProductsByUserRequirementsInput): Promise<string> {
-//   console.debug('Finding products by user requirements:', input);
-//   try {
-//     const { 
-//       example_review, 
-//       category, 
-//       min_rating = 4, 
-//       max_rating = 5, 
-//       limit = 5 
-//     } = input;
-
-//     // Get embeddings for the example review
-//     const embedding = await embeddings.embedQuery(example_review);
-    
-//     // Build the query based on parameters
-//     let query = `
-//       FOR product IN Products
-//         FILTER product.average_rating >= @min_rating 
-//         AND product.average_rating <= @max_rating
-//     `;
-    
-//     if (category) {
-//       query += `
-//         FOR edge IN BelongsToCategory
-//           FILTER edge._from == product._id
-//           FOR cat IN Categories
-//             FILTER cat._id == edge._to
-//             FILTER CONTAINS(LOWER(cat.name), LOWER(@category))
-//       `;
-//     }
-    
-//     query += `
-//         SEARCH ANALYZER(VECTOR_DISTANCE(product.embedding, @embedding) < 0.3, "vector")
-//         SORT VECTOR_DISTANCE(product.embedding, @embedding) ASC
-//         LIMIT @limit
-//         RETURN {
-//           product_id: product._id,
-//           title: product.title,
-//           description: product.description,
-//           price: product.price,
-//           average_rating: product.average_rating,
-//           rating_count: product.rating_count,
-//           features: product.features_text,
-//           vector_score: VECTOR_DISTANCE(product.embedding, @embedding),
-//           category: ${category ? 'cat.name' : 'null'}
-//         }
-//     `;
-    
-//     const products = await executeAqlQuery(query, {
-//       embedding,
-//       category,
-//       min_rating: parseFloat(String(min_rating)),
-//       max_rating: parseFloat(String(max_rating)),
-//       limit: parseInt(String(limit))
-//     });
-    
-//     return JSON.stringify({
-//       search_method: "vector",
-//       user_requirements: example_review,
-//       matches_found: products.length,
-//       products
-//     }, null, 2);
-//   } catch (error) {
-//     console.error("Error finding products by user requirements:", error);
-//     return JSON.stringify({ 
-//       error: "Failed to find products matching user requirements",
-//       hint: "Make sure to provide a detailed example_review describing what you're looking for"
-//     });
-//   }
-// }
